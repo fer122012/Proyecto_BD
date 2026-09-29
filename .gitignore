@@ -1,0 +1,26 @@
+# Credenciales y configuración local (NUNCA subir)
+.env
+*.local.properties
+application-local.properties
+application-local.yml
+
+# Java / Maven / Gradle
+target/
+build/
+.gradle/
+*.class
+*.log
+
+# Node / React
+node_modules/
+dist/
+.vite/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
