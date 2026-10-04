@@ -24,3 +24,15 @@ dist/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Variables de entorno adicionales
+.env.*
+*.env
+
+# Spring Boot / Spring Initializr
+out/
+HELP.md
+
+# Archivos locales que no forman parte del repositorio
+CLAUDE.md
+Descripción Proyecto.pdf
