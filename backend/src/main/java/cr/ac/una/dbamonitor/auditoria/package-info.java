@@ -1,7 +1,9 @@
 /**
  * Módulo 5 - Auditoría.
  * <p>
- * Contendrá el controller, service y repository que consultan inicios de sesión, permisos,
- * cambios relevantes y eventos de auditoría de la instancia.
+ * Controller, service y repository que consultan los logins registrados en el servidor, los
+ * roles de servidor y sus miembros, los privilegios otorgados directamente a cada login, y los
+ * objetos con dependencias sin resolver (el equivalente en SQL Server a los "objetos inválidos"
+ * de Oracle). Ver database/queries/modulo5_auditoria/ y docs/modulo5-auditoria.md.
  */
 package cr.ac.una.dbamonitor.auditoria;

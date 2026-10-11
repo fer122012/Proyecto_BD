@@ -24,6 +24,13 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> manejarArgumentoInvalido(IllegalArgumentException ex,
+                                                              HttpServletRequest request) {
+        log.warn("Solicitud inválida en {}: {}", request.getRequestURI(), ex.getMessage());
+        return construirRespuesta(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(CannotGetJdbcConnectionException.class)
     public ResponseEntity<ApiError> manejarErrorDeConexion(CannotGetJdbcConnectionException ex,
                                                            HttpServletRequest request) {
