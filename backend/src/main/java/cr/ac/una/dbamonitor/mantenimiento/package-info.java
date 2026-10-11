@@ -1,7 +1,9 @@
 /**
  * Módulo 6 - Mantenimiento preventivo.
  * <p>
- * Contendrá el controller, service y repository que consultan la fragmentación de índices,
- * las estadísticas y la integridad de las bases de datos.
+ * Controller, service y repository que consultan el estado de las estadísticas de las tablas
+ * y los objetos candidatos a recompilar, y que ejecutan las dos acciones administrativas del
+ * módulo: recalcular estadísticas (UPDATE STATISTICS) y forzar la recompilación de un objeto
+ * (sp_recompile). Ver database/queries/modulo6_mantenimiento/ y docs/modulo6-mantenimiento.md.
  */
 package cr.ac.una.dbamonitor.mantenimiento;
