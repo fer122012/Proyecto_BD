@@ -20,6 +20,14 @@ export const auditoria = {
 
 const conBase = (ruta, baseDatos) => `${ruta}?baseDatos=${encodeURIComponent(baseDatos)}`
 
+export const almacenamiento = {
+  basesDeDatos: () => obtener('/api/almacenamiento/bases-de-datos'),
+  filegroups: (baseDatos) => obtener(conBase('/api/almacenamiento/filegroups', baseDatos)),
+  archivos: (baseDatos) => obtener(conBase('/api/almacenamiento/archivos', baseDatos)),
+  objetos: (baseDatos) => obtener(conBase('/api/almacenamiento/objetos', baseDatos)),
+  crecimiento: (baseDatos) => obtener(conBase('/api/almacenamiento/crecimiento', baseDatos)),
+}
+
 export const mantenimiento = {
   estadisticas: (baseDatos) => obtener(conBase('/api/mantenimiento/estadisticas', baseDatos)),
   objetosInvalidos: (baseDatos) => obtener(conBase('/api/mantenimiento/objetos-invalidos', baseDatos)),
