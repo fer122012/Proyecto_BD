@@ -6,7 +6,7 @@ import useConsulta from '../hooks/useConsulta.js'
 const MODULOS = [
   { ruta: '/instancia', nombre: 'Instancia' },
   { ruta: '/rendimiento', nombre: 'Rendimiento', pendiente: true },
-  { ruta: '/almacenamiento', nombre: 'Almacenamiento', pendiente: true },
+  { ruta: '/almacenamiento', nombre: 'Almacenamiento' },
   { ruta: '/respaldos', nombre: 'Respaldos', pendiente: true },
   { ruta: '/auditoria', nombre: 'Auditoría' },
   { ruta: '/mantenimiento', nombre: 'Mantenimiento' },

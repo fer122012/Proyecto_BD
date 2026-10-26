@@ -28,3 +28,11 @@ export function duracionLarga(segundos) {
   partes.push(`${horas} ${horas === 1 ? 'hora' : 'horas'}`)
   return partes.join(', ')
 }
+
+const formatoDecimal = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 1 })
+
+/** Tamaño en MB como "512 MB" o "1,5 GB", para el Módulo 3. */
+export function tamano(mb) {
+  if (mb == null) return '—'
+  return mb >= 1024 ? `${formatoDecimal.format(mb / 1024)} GB` : `${formatoDecimal.format(mb)} MB`
+}

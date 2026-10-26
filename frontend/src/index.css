@@ -407,6 +407,7 @@ button {
 }
 
 .tabla .numero {
+  white-space: nowrap;
   text-align: right;
 }
 
@@ -538,6 +539,85 @@ button {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ---------- Medidores y gráficos (Módulo 3) ---------- */
+
+.medidor {
+  position: relative;
+  height: 8px;
+  min-width: 80px;
+  border-radius: 999px;
+  background: var(--superficie-control);
+  overflow: hidden;
+}
+
+.medidor span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--dorado);
+}
+
+.medidor.aviso span {
+  background: var(--aviso);
+}
+
+.medidor.error span {
+  background: var(--error);
+}
+
+.filegroups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filegroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filegroup-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filegroup .medidor {
+  height: 12px;
+}
+
+.grafico {
+  display: block;
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--texto-tenue);
+}
+
+.leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leyenda i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--dorado);
+}
+
+.leyenda i.asignado {
+  background: var(--texto-tenue);
 }
 
 @media (max-width: 1100px) {
