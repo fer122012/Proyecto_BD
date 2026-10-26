@@ -6,6 +6,7 @@ import cr.ac.una.dbamonitor.auditoria.dto.PrivilegioLoginDto;
 import cr.ac.una.dbamonitor.auditoria.dto.RolServidorDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -41,9 +42,12 @@ public class AuditoriaController {
         return auditoriaService.obtenerPrivilegios();
     }
 
-    /** Objetos (vistas, procedimientos, funciones) con dependencias que no se pudieron resolver. */
+    /**
+     * Objetos (vistas, procedimientos, funciones) con dependencias que no se pudieron resolver,
+     * dentro de la base indicada: las dependencias son propias de cada base de datos.
+     */
     @GetMapping("/objetos-invalidos")
-    public List<ObjetoInvalidoDto> obtenerObjetosInvalidos() {
-        return auditoriaService.obtenerObjetosInvalidos();
+    public List<ObjetoInvalidoDto> obtenerObjetosInvalidos(@RequestParam String baseDatos) {
+        return auditoriaService.obtenerObjetosInvalidos(baseDatos);
     }
 }

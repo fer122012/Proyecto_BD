@@ -5,6 +5,7 @@ import cr.ac.una.dbamonitor.auditoria.dto.MiembroRolDto;
 import cr.ac.una.dbamonitor.auditoria.dto.ObjetoInvalidoDto;
 import cr.ac.una.dbamonitor.auditoria.dto.PrivilegioLoginDto;
 import cr.ac.una.dbamonitor.common.CargadorConsultasSql;
+import cr.ac.una.dbamonitor.common.SqlIdentificadores;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +14,9 @@ import java.util.List;
 /**
  * Ejecuta las consultas del Módulo 5 (database/queries/modulo5_auditoria/) y convierte
  * cada fila en un DTO. No contiene lógica: solo acceso a datos.
+ * <p>
+ * La consulta de objetos inválidos usa el marcador {@code {BASE}}, que se reemplaza por el
+ * nombre ya validado por el service y envuelto en corchetes (igual que en los Módulos 3 y 6).
  */
 @Repository
 public class AuditoriaRepository {
@@ -60,8 +64,10 @@ public class AuditoriaRepository {
                         fila.getString("estado")));
     }
 
-    public List<ObjetoInvalidoDto> consultarObjetosInvalidos() {
-        return jdbcTemplate.query(consultaObjetosInvalidos, (fila, numeroFila) ->
+    /** @param baseDatos nombre de base de datos ya validado (sin corchetes) */
+    public List<ObjetoInvalidoDto> consultarObjetosInvalidos(String baseDatos) {
+        String consulta = consultaObjetosInvalidos.replace("{BASE}", SqlIdentificadores.entreCorchetes(baseDatos));
+        return jdbcTemplate.query(consulta, (fila, numeroFila) ->
                 new ObjetoInvalidoDto(
                         fila.getString("esquema"),
                         fila.getString("objeto"),

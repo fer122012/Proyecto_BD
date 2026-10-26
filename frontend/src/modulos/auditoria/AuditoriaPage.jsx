@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { auditoria } from '../../api/endpoints.js'
+import { auditoria, instancia } from '../../api/endpoints.js'
 import BotonActualizar from '../../components/BotonActualizar.jsx'
-import { ContenidoConsulta, SinDatos } from '../../components/Estados.jsx'
+import { ContenidoConsulta, MensajeError, SinDatos } from '../../components/Estados.jsx'
 import Portada from '../../components/Portada.jsx'
 import Tabla from '../../components/Tabla.jsx'
 import useConsulta from '../../hooks/useConsulta.js'
@@ -58,8 +58,14 @@ export default function AuditoriaPage() {
   const logins = useConsulta(auditoria.logins)
   const roles = useConsulta(auditoria.roles)
   const privilegios = useConsulta(auditoria.privilegios)
-  const objetos = useConsulta(auditoria.objetosInvalidos)
   const [busqueda, setBusqueda] = useState('')
+
+  // Las dependencias son propias de cada base: se revisan en la base de usuario elegida.
+  const bases = useConsulta(instancia.basesDeDatos)
+  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE')
+  const [baseElegida, setBaseElegida] = useState('')
+  const base = baseElegida || basesUsuario[0]?.nombre || ''
+  const objetos = useConsulta(base ? () => auditoria.objetosInvalidos(base) : null, [base])
 
   const actualizarTodo = () => {
     logins.recargar()
@@ -91,7 +97,7 @@ export default function AuditoriaPage() {
             <span className="chip">{deshabilitados} deshabilitados</span>
             {objetos.datos && (
               <span className={`chip ${objetos.datos.length > 0 ? 'error' : 'ok'}`}>
-                {objetos.datos.length === 0 ? 'Sin objetos inválidos' : `${objetos.datos.length} ${objetos.datos.length === 1 ? 'objeto inválido' : 'objetos inválidos'}`}
+                {objetos.datos.length === 0 ? `Sin objetos inválidos en ${base}` : `${objetos.datos.length} ${objetos.datos.length === 1 ? 'objeto inválido' : 'objetos inválidos'} en ${base}`}
               </span>
             )}
           </div>
@@ -175,16 +181,40 @@ export default function AuditoriaPage() {
         </div>
 
         <section className="bloque">
-          <h2 className="etiqueta">Objetos con dependencias rotas</h2>
-          <ContenidoConsulta consulta={objetos} vacio="No hay objetos inválidos: todas las dependencias se resuelven.">
-            {(datos) => (
-              <Tabla
-                columnas={COLUMNAS_OBJETOS}
-                filas={datos}
-                clave={(o) => `${o.esquema}.${o.objeto}-${o.esquemaReferenciado}.${o.objetoReferenciado}`}
-              />
-            )}
-          </ContenidoConsulta>
+          <div className="bloque-encabezado">
+            <h2 className="etiqueta">Objetos con dependencias rotas</h2>
+            <label className="campo" htmlFor="base-objetos">
+              Base de datos
+              <select
+                id="base-objetos"
+                value={base}
+                onChange={(e) => setBaseElegida(e.target.value)}
+                disabled={basesUsuario.length === 0}
+              >
+                {basesUsuario.length === 0 && <option value="">Sin bases de usuario</option>}
+                {basesUsuario.map((b) => (
+                  <option key={b.nombre} value={b.nombre}>
+                    {b.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {bases.error && <MensajeError mensaje={bases.error} onReintentar={bases.recargar} />}
+          {bases.datos && basesUsuario.length === 0 && (
+            <SinDatos>La instancia no tiene bases de datos de usuario en línea para revisar.</SinDatos>
+          )}
+          {base && (
+            <ContenidoConsulta consulta={objetos} vacio="No hay objetos inválidos: todas las dependencias se resuelven.">
+              {(datos) => (
+                <Tabla
+                  columnas={COLUMNAS_OBJETOS}
+                  filas={datos}
+                  clave={(o) => `${o.esquema}.${o.objeto}-${o.esquemaReferenciado}.${o.objetoReferenciado}`}
+                />
+              )}
+            </ContenidoConsulta>
+          )}
         </section>
       </div>
     </>

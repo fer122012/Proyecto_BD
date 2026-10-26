@@ -2,6 +2,8 @@ import { enviar, obtener } from './cliente.js'
 
 /** Rutas de la API agrupadas por módulo. */
 
+const conBase = (ruta, baseDatos) => `${ruta}?baseDatos=${encodeURIComponent(baseDatos)}`
+
 export const salud = {
   estado: () => obtener('/api/salud'),
 }
@@ -15,10 +17,8 @@ export const auditoria = {
   logins: () => obtener('/api/auditoria/logins'),
   roles: () => obtener('/api/auditoria/roles'),
   privilegios: () => obtener('/api/auditoria/privilegios'),
-  objetosInvalidos: () => obtener('/api/auditoria/objetos-invalidos'),
+  objetosInvalidos: (baseDatos) => obtener(conBase('/api/auditoria/objetos-invalidos', baseDatos)),
 }
-
-const conBase = (ruta, baseDatos) => `${ruta}?baseDatos=${encodeURIComponent(baseDatos)}`
 
 export const almacenamiento = {
   basesDeDatos: () => obtener('/api/almacenamiento/bases-de-datos'),

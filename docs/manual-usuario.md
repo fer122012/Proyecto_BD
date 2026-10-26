@@ -69,7 +69,7 @@ roto que debería revisar?*
 | Logins registrados | `GET /api/auditoria/logins` |
 | Roles de servidor y sus miembros | `GET /api/auditoria/roles` |
 | Privilegios otorgados por login | `GET /api/auditoria/privilegios` |
-| Objetos con dependencias rotas | `GET /api/auditoria/objetos-invalidos` |
+| Objetos con dependencias rotas | `GET /api/auditoria/objetos-invalidos?baseDatos=BASE_MONITOR` |
 
 **Cómo leer los logins:** cada fila tiene `habilitado` (si puede conectarse) y `esSysadmin` (si
 tiene control total de la instancia). Un login puede no tener privilegios individuales en
