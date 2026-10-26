@@ -10,11 +10,12 @@
   vive ese objeto. Los permisos de servidor no alcanzan: hay que concederlo en CADA BASE DE
   DATOS de práctica que el grupo use para la demostración (por ejemplo AdventureWorks).
 
-  Reemplazar <BASE_DE_PRACTICA> por el nombre real antes de ejecutar, y ejecutar con un usuario
+  Usa la base de práctica del grupo, BASE_MONITOR (00_crear_base_monitor.sql). Para otra base,
+  cambiar el USE. Ejecutar con un usuario
   que tenga permisos de administración (por ejemplo sysadmin). Repetir este script por cada
   base de datos adicional que se quiera usar con el Módulo 6.
 */
-USE <BASE_DE_PRACTICA>;
+USE BASE_MONITOR;
 GO
 
 -- El login ya existe a nivel de servidor (01_crear_login_monitor.sql); aquí se crea su
