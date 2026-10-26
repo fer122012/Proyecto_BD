@@ -36,3 +36,6 @@ HELP.md
 # Archivos locales que no forman parte del repositorio
 CLAUDE.md
 Descripción Proyecto.pdf
+
+# Plantilla de variables del frontend (sí se sube)
+!.env.example
