@@ -1,7 +1,8 @@
 /**
  * Módulo 4 - Respaldo y recuperación.
  * <p>
- * Contendrá el controller, service y repository que consultan el historial de respaldos,
- * los modelos de recuperación y el estado de los respaldos de cada base de datos.
+ * Consulta en msdb el último respaldo de cada tipo por base de datos, el historial de respaldos
+ * de una base y los respaldos que se están ejecutando, e interpreta si la situación de cada base
+ * es adecuada o representa un riesgo de pérdida de datos.
  */
 package cr.ac.una.dbamonitor.respaldo;
