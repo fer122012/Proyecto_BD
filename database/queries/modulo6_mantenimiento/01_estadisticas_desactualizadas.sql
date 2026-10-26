@@ -12,16 +12,25 @@
    {BASE} es la base de datos de práctica elegida por el usuario (por ejemplo AdventureWorks).
    El backend la reemplaza ya validada y escrita entre corchetes (ver SqlIdentificadores),
    porque esta vista de administración dinámica solo informa sobre la base de datos actual y
-   aquí se consulta sin cambiar el contexto de conexión (que sigue siendo master). */
+   aquí se consulta sin cambiar el contexto de conexión (que sigue siendo master).
+
+   El esquema se toma de {BASE}.sys.schemas y no con SCHEMA_NAME(): esa función busca el
+   schema_id en la base ACTUAL (master), así que para esquemas distintos de dbo devolvía NULL.
+
+   ultima_actualizacion es NULL si SQL Server nunca calculó la estadística (por ejemplo, un
+   índice creado sobre una tabla vacía que luego se llenó y nadie ha consultado). Esas van
+   primero, porque el optimizador no tiene ninguna información sobre esos datos. */
 SELECT TOP (50)
-    SCHEMA_NAME(t.schema_id) AS esquema,
+    sch.name                 AS esquema,
     t.name                   AS tabla,
     s.name                   AS estadistica,
     sp.last_updated          AS ultima_actualizacion,
     sp.rows                  AS filas,
     sp.modification_counter  AS filas_modificadas
 FROM {BASE}.sys.tables AS t
+JOIN {BASE}.sys.schemas AS sch ON sch.schema_id = t.schema_id
 JOIN {BASE}.sys.stats AS s ON s.object_id = t.object_id
 CROSS APPLY {BASE}.sys.dm_db_stats_properties(t.object_id, s.stats_id) AS sp
 WHERE t.is_ms_shipped = 0
-ORDER BY sp.modification_counter DESC, sp.last_updated ASC;
+ORDER BY CASE WHEN sp.last_updated IS NULL THEN 0 ELSE 1 END,
+         sp.modification_counter DESC, sp.last_updated ASC;

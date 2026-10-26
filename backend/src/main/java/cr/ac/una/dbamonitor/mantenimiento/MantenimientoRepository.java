@@ -47,7 +47,10 @@ public class MantenimientoRepository {
                         fila.getString("esquema"),
                         fila.getString("tabla"),
                         fila.getString("estadistica"),
-                        fila.getTimestamp("ultima_actualizacion").toLocalDateTime(),
+                        // NULL si SQL Server nunca calculó la estadística (ver la consulta).
+                        fila.getTimestamp("ultima_actualizacion") == null
+                                ? null
+                                : fila.getTimestamp("ultima_actualizacion").toLocalDateTime(),
                         fila.getLong("filas"),
                         fila.getLong("filas_modificadas")));
     }
@@ -75,8 +78,10 @@ public class MantenimientoRepository {
 
     /** @param baseDatos, esquema, objeto ya validados (sin corchetes, por eso es seguro concatenarlos) */
     public void recompilarObjeto(String baseDatos, String esquema, String objeto) {
-        String nombreCompleto = baseDatos + "." + esquema + "." + objeto;
-        String comando = plantillaRecompilarObjeto.replace("{OBJETO}", nombreCompleto);
+        String nombreObjeto = SqlIdentificadores.entreCorchetes(esquema) + "." + SqlIdentificadores.entreCorchetes(objeto);
+        String comando = plantillaRecompilarObjeto
+                .replace("{BASE}", SqlIdentificadores.entreCorchetes(baseDatos))
+                .replace("{OBJETO}", nombreObjeto);
         jdbcTemplate.execute(comando);
     }
 }

@@ -7,8 +7,17 @@ import Tabla from '../../components/Tabla.jsx'
 import useConsulta from '../../hooks/useConsulta.js'
 import { fechaHora, numero } from '../../utils/formato.js'
 
-/** Porcentaje de filas modificadas desde la última actualización de la estadística. */
-const porcentajeModificado = (e) => (e.filas > 0 ? (e.filasModificadas / e.filas) * 100 : 0)
+/** Una estadística que nunca se calculó no tiene fecha: el optimizador no sabe nada de esos datos. */
+const nuncaCalculada = (e) => e.ultimaActualizacion == null
+
+/**
+ * Porcentaje de filas modificadas desde la última actualización de la estadística.
+ * Si nunca se calculó, se trata como 100 % desactualizada.
+ */
+const porcentajeModificado = (e) => {
+  if (nuncaCalculada(e)) return 100
+  return e.filas > 0 ? (e.filasModificadas / e.filas) * 100 : 0
+}
 
 /** A partir de este porcentaje se recomienda recalcular la estadística. */
 const UMBRAL_DESACTUALIZADA = 20
@@ -58,12 +67,18 @@ export default function MantenimientoPage() {
   const columnasEstadisticas = [
     { titulo: 'Tabla', clase: 'mono', valor: (e) => `${e.esquema}.${e.tabla}` },
     { titulo: 'Estadística', clase: 'mono tenue', valor: (e) => e.estadistica },
-    { titulo: 'Actualizada', clase: 'mono', valor: (e) => fechaHora(e.ultimaActualizacion) },
-    { titulo: 'Filas', clase: 'mono numero', valor: (e) => numero(e.filas) },
+    {
+      titulo: 'Actualizada',
+      clase: 'mono',
+      valor: (e) =>
+        nuncaCalculada(e) ? <span style={{ color: 'var(--error)' }}>Nunca</span> : fechaHora(e.ultimaActualizacion),
+    },
+    { titulo: 'Filas', clase: 'mono numero', valor: (e) => (nuncaCalculada(e) ? '—' : numero(e.filas)) },
     {
       titulo: 'Modificadas',
       clase: 'mono numero',
       valor: (e) => {
+        if (nuncaCalculada(e)) return <span className="tenue">Sin calcular</span>
         const porcentaje = porcentajeModificado(e)
         const color = porcentaje >= UMBRAL_DESACTUALIZADA ? 'var(--error)' : undefined
         return (

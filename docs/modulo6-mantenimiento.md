@@ -29,8 +29,17 @@ partes (`base.esquema.objeto`), sin necesidad de cambiar la base de datos activa
 
 | Indicador (endpoint) | Fuente | Cómo interpretarlo |
 |---|---|---|
-| Estadísticas (`/estadisticas`) | `sys.dm_db_stats_properties` | Por cada estadística de cada tabla de usuario: cuándo se actualizó por última vez (`ultimaActualizacion`), cuántas filas tiene (`filas`) y cuántas han cambiado desde la última actualización (`filasModificadas`). La lista llega ordenada con las más desactualizadas primero (más cambios sin reflejar, luego más antiguas), para priorizar sobre cuáles conviene recalcular. |
-| Objetos candidatos (`/objetos-invalidos`) | `sys.sql_expression_dependencies` | Mismo criterio que el Módulo 5 (ver `docs/modulo5-auditoria.md`), aplicado sobre la base de práctica indicada. Son los objetos que conviene recompilar para confirmar si de verdad tienen un error. |
+| Estadísticas (`/estadisticas`) | `sys.dm_db_stats_properties` | Por cada estadística de cada tabla de usuario: cuándo se actualizó por última vez (`ultimaActualizacion`), cuántas filas tiene (`filas`) y cuántas han cambiado desde la última actualización (`filasModificadas`). La lista llega ordenada con las más desactualizadas primero (más cambios sin reflejar, luego más antiguas), para priorizar sobre cuáles conviene recalcular. Si `ultimaActualizacion` es `null`, SQL Server **nunca calculó** esa estadística (por ejemplo, un índice creado sobre una tabla vacía que luego se llenó): aparece primero, como "Nunca", y se recomienda recalcularla. |
+| Objetos candidatos (`/objetos-invalidos`) | `sys.sql_expression_dependencies` | Mismo criterio que el Módulo 5 (ver `docs/modulo5-auditoria.md`), aplicado sobre la base de práctica indicada. Son los objetos que conviene recompilar para confirmar si de verdad tienen un error. Requiere `SELECT` sobre esa vista dentro de la base (`02_permisos_mantenimiento.sql`). |
+
+Las dos consultas obtienen el esquema de `{BASE}.sys.schemas` y no con `SCHEMA_NAME()`: como la
+conexión está en `master`, esa función buscaba el esquema en `master` y devolvía `NULL` para
+cualquier esquema distinto de `dbo`, con lo que "Recalcular" y "Recompilar" recibían un esquema
+vacío y fallaban.
+
+Por el mismo motivo, `sp_recompile` se invoca como `[BASE].sys.sp_recompile N'[esquema].[objeto]'`:
+ese procedimiento solo busca el objeto en la base actual, y si se le pasa el nombre de tres partes
+desde `master` responde con el error 15165 ("No se encontró el objeto").
 
 ## Las dos acciones administrativas
 
