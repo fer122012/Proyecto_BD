@@ -15,7 +15,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'dba_monitor')
 BEGIN
     CREATE LOGIN dba_monitor
-        WITH PASSWORD = N'monitor123',
+        WITH PASSWORD = N'<CAMBIAR_CONTRASENA>',
              DEFAULT_DATABASE = master,
              CHECK_POLICY = ON;   -- aplica la política de contraseñas de Windows
 END
