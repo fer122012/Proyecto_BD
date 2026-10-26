@@ -28,7 +28,8 @@ Para correr el proyecto desde cero, en este orden:
 3. Login `dba_monitor` creado ([paso 3](#3-login-de-la-aplicación)).
 4. Java 17 y Node.js instalados ([paso 4](#4-herramientas)).
 5. `application-local.properties` con la contraseña ([paso 5](#5-configuración-local-del-backend)).
-6. Levantar el backend y luego el frontend ([Instalación y ejecución](#instalación-y-ejecución)).
+6. Base de práctica `BASE_MONITOR`, sus permisos y su historial de respaldos ([Base de datos de práctica](#base-de-datos-de-práctica)).
+7. Levantar el backend y luego el frontend ([Instalación y ejecución](#instalación-y-ejecución)).
 
 > El proyecto solo usa **SQL Server**. No hace falta tener ningún servicio de Oracle encendido.
 
@@ -85,7 +86,7 @@ netstat -ano | findstr :1433
 
 ### 3. Login de la aplicación
 Ejecutar `database/scripts/01_crear_login_monitor.sql` con un usuario administrador, conectado a
-la instancia elegida en el paso 1 (en SSMS, o con `sqlcmd -S localhost\SQLEXPRESS -E -C -i <archivo>`).
+la instancia elegida en el paso 1 (en SSMS, o con `sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i <archivo>`).
 Antes de ejecutarlo, reemplazar el placeholder `<CAMBIAR_CONTRASENA>` por una contraseña
 segura **sin guardar ese cambio en el repositorio**. El script crea el login `dba_monitor`
 y le otorga `VIEW SERVER STATE` y `VIEW ANY DEFINITION`.
@@ -96,8 +97,8 @@ Para cambiar la contraseña después:
 ALTER LOGIN dba_monitor WITH PASSWORD = N'<NUEVA_CONTRASENA>';
 ```
 
-Para el **Módulo 6 (Mantenimiento)** ejecutar además `database/scripts/02_permisos_mantenimiento.sql`,
-reemplazando `<BASE_DE_PRACTICA>` por la base que se vaya a usar.
+Los permisos que necesita cada módulo sobre la base de práctica (scripts 02 y 03) se explican en
+[Base de datos de práctica](#base-de-datos-de-práctica).
 
 ### 4. Herramientas
 - **Java 17** (JDK)
@@ -122,10 +123,40 @@ spring.datasource.password=<CAMBIAR_CONTRASENA>
 > sin validarlo. Es adecuado para desarrollo, no para producción.
 
 ## Base de datos de práctica
-El grupo debe acordar una base de datos de ejemplo común (por ejemplo **AdventureWorks**)
-para que todos prueben los módulos con los mismos datos.
+El grupo usa **`BASE_MONITOR`**, una base propia que simula los sistemas de recursos humanos,
+ventas e inventario de la empresa del caso de estudio. Está pensada para que cada módulo tenga
+algo real que mostrar:
 
-**Pendiente:** definir la base de práctica y documentar aquí cómo instalarla.
+| Contenido | Módulo |
+|---|---|
+| Esquemas `rrhh`, `ventas` e `inventario` con unas 260 000 filas | 3 y 6 |
+| Filegroups `PRIMARY`, `FG_DATOS` y `FG_HISTORICO` (este último de tamaño fijo y casi lleno: estado CRITICO) | 3 |
+| Modelo de recuperación FULL e historial de respaldos completos, diferenciales y de log | 3 (crecimiento) |
+| Una vista y dos procedimientos con dependencias rotas | 5 y 6 |
+| Estadísticas con muchas filas modificadas desde su última actualización | 6 |
+| Roles de base de datos y usuarios sin login (sin contraseñas) | 5 |
+
+Ejecutar los scripts **en este orden**, con un usuario administrador y desde la raíz del
+repositorio. `-f 65001` hace que `sqlcmd` lea los archivos como UTF-8 (sin eso, las tildes quedan
+mal guardadas). Si la instancia es otra, cambiar `localhost\SQLEXPRESS`.
+
+```
+sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\00_crear_base_monitor.sql
+sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\02_permisos_mantenimiento.sql
+sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\03_permisos_almacenamiento.sql
+sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\05_generar_historial_respaldos.sql
+```
+
+| Script | Qué hace |
+|---|---|
+| `00_crear_base_monitor.sql` | Crea `BASE_MONITOR` con datos de ejemplo. **Si ya existe, la elimina y la vuelve a crear** (también borra su historial de respaldos). |
+| `02_permisos_mantenimiento.sql` | Usuario `dba_monitor` en la base con el rol `db_ddladmin`, para recalcular estadísticas y recompilar (Módulo 6). |
+| `03_permisos_almacenamiento.sql` | Usuario `dba_monitor` en la base y en `msdb`, con lectura del historial de respaldos (Módulo 3). |
+| `05_generar_historial_respaldos.sql` | Hace respaldos reales (completo, diferencial y de log) con ventas nuevas entre ellos, para que haya historial de crecimiento. Se puede repetir en días distintos para obtener un promedio diario. |
+
+Los respaldos se guardan en la carpeta de respaldos predeterminada de la instancia (por ejemplo
+`C:\Program Files\Microsoft SQL Server\MSSQL17.SQLEXPRESS\MSSQL\Backup`) y ocupan unos 250 MB por
+cada ejecución del script 05.
 
 ## Instalación y ejecución
 
@@ -160,10 +191,10 @@ copiar `frontend/.env.example` como `frontend/.env.local` y cambiar `VITE_API_UR
 - `src/api/`: cliente HTTP y rutas de la API por módulo.
 - `src/hooks/useConsulta.js`: estado de cada consulta (cargando, error, datos, recargar).
 - `src/components/`: barra de navegación, portada, tablas, indicadores y mensajes de estado.
-- `src/modulos/<modulo>/`: una página por módulo (`instancia`, `auditoria`, `mantenimiento`).
+- `src/modulos/<modulo>/`: una página por módulo (`instancia`, `almacenamiento`, `auditoria`, `mantenimiento`).
 - `src/index.css`: tema visual "Celosía" (grafito y dorado); los colores están en variables al inicio.
 
-Los módulos 2, 3 y 4 aparecen en la navegación como "pronto" hasta que tengan endpoints.
+Los módulos 2 y 4 aparecen en la navegación como "pronto" hasta que tengan endpoints.
 
 ## Solución de problemas
 
