@@ -71,6 +71,21 @@ todavía pueden vaciar la caché de vez en cuando; se puede revisar con:
 SELECT name FROM sys.databases WHERE is_auto_close_on = 1;
 ```
 
+### Poca memoria libre en el equipo
+
+Si Windows se queda con poca RAM libre, SQL Server reduce su caché de planes para devolverle
+memoria al sistema y las estadísticas de las consultas duran muy poco (en las pruebas, con 575 MB
+libres de 16 GB, la caché quedó en 1 MB y solo conservaba una o dos sentencias). Se puede revisar con:
+
+```sql
+SELECT available_physical_memory_kb / 1024 AS ram_libre_mb, system_memory_state_desc
+FROM sys.dm_os_sys_memory;
+```
+
+Para la demostración: cerrar programas que no se usen, ejecutar el script 06 y mostrar las
+secciones de consultas justo después. Las secciones de sesiones, bloqueos y procesos no dependen de
+la caché, así que no se ven afectadas.
+
 ### Lo que muestra la carga
 
 Con la carga, la consulta que más CPU acumula es la más sencilla: el detalle de una factura por su
