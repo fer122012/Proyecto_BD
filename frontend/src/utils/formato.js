@@ -36,3 +36,13 @@ export function tamano(mb) {
   if (mb == null) return '—'
   return mb >= 1024 ? `${formatoDecimal.format(mb / 1024)} GB` : `${formatoDecimal.format(mb)} MB`
 }
+
+/** "45 s", "3 min 20 s" o "1 h 5 min" a partir de segundos, para el Módulo 4. */
+export function duracion(segundos) {
+  if (segundos == null) return '—'
+  if (segundos < 60) return `${segundos} s`
+  const horas = Math.floor(segundos / 3600)
+  const minutos = Math.floor((segundos % 3600) / 60)
+  if (horas > 0) return `${horas} h ${minutos} min`
+  return `${minutos} min ${segundos % 60} s`
+}
