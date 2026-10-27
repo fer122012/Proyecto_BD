@@ -36,3 +36,27 @@ export function tamano(mb) {
   if (mb == null) return '—'
   return mb >= 1024 ? `${formatoDecimal.format(mb / 1024)} GB` : `${formatoDecimal.format(mb)} MB`
 }
+
+/** Tiempo en milisegundos como "850 ms", "4,6 s" o "2,5 min", para el Módulo 2. */
+export function milisegundos(ms) {
+  if (ms == null) return '—'
+  if (ms < 1000) return `${formatoDecimal.format(ms)} ms`
+  if (ms < 60000) return `${formatoDecimal.format(ms / 1000)} s`
+  return `${formatoDecimal.format(ms / 60000)} min`
+}
+
+/** Memoria en KB como "32 KB" o "1,5 MB", para el Módulo 2. */
+export function memoriaKb(kb) {
+  if (kb == null) return '—'
+  return kb >= 1024 ? tamano(kb / 1024) : `${formatoNumero.format(kb)} KB`
+}
+
+/** "45 s", "3 min 20 s" o "1 h 5 min" a partir de segundos, para el Módulo 4. */
+export function duracion(segundos) {
+  if (segundos == null) return '—'
+  if (segundos < 60) return `${segundos} s`
+  const horas = Math.floor(segundos / 3600)
+  const minutos = Math.floor((segundos % 3600) / 60)
+  if (horas > 0) return `${horas} h ${minutos} min`
+  return `${minutos} min ${segundos % 60} s`
+}

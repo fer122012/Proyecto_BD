@@ -13,6 +13,20 @@ export const instancia = {
   basesDeDatos: () => obtener('/api/instancia/bases-de-datos'),
 }
 
+export const rendimiento = {
+  consultasConsumo: () => obtener('/api/rendimiento/consultas-consumo'),
+  tiempoPromedio: () => obtener('/api/rendimiento/tiempo-promedio'),
+  sesiones: () => obtener('/api/rendimiento/sesiones'),
+  bloqueos: () => obtener('/api/rendimiento/bloqueos'),
+  procesos: (orden) => obtener(`/api/rendimiento/procesos?orden=${encodeURIComponent(orden)}`),
+}
+
+export const respaldo = {
+  estadoPorBase: () => obtener('/api/respaldos'),
+  historial: (baseDatos) => obtener(conBase('/api/respaldos/historial', baseDatos)),
+  enCurso: () => obtener('/api/respaldos/en-curso'),
+}
+
 export const auditoria = {
   logins: () => obtener('/api/auditoria/logins'),
   roles: () => obtener('/api/auditoria/roles'),

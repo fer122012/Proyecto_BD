@@ -60,7 +60,8 @@ para que cada módulo tenga algo real que mostrar:
 |---|---|
 | Esquemas `rrhh`, `ventas` e `inventario` con unas 260 000 filas | 3 y 6 |
 | Filegroups `PRIMARY`, `FG_DATOS` y `FG_HISTORICO` (este último de tamaño fijo y casi lleno: estado CRITICO) | 3 |
-| Modelo de recuperación FULL e historial de respaldos completos, diferenciales y de log | 3 |
+| Modelo de recuperación FULL e historial de respaldos completos, diferenciales y de log | 3 y 4 |
+| Consultas de reportes y búsquedas para generar actividad (script 06) | 2 |
 | Una vista y dos procedimientos con dependencias rotas | 5 y 6 |
 | Estadísticas desactualizadas y otras que nunca se calcularon | 6 |
 | Roles de base de datos y usuarios sin login (sin contraseñas) | 5 |
@@ -70,7 +71,10 @@ para que cada módulo tenga algo real que mostrar:
 | `00_crear_base_monitor.sql` | Crea la base con datos de ejemplo. **Si ya existe, la borra y la vuelve a crear** (también su historial de respaldos). |
 | `02_permisos_mantenimiento.sql` | Usuario `dba_monitor` en la base, con lectura de las dependencias (Módulos 5 y 6) y el rol `db_ddladmin` para recalcular y recompilar (Módulo 6). |
 | `03_permisos_almacenamiento.sql` | Usuario `dba_monitor` en la base y en `msdb`, con lectura del historial de respaldos (Módulo 3). |
+| `04_permisos_respaldo.sql` | Usuario `dba_monitor` en `msdb`, con lectura del historial de respaldos y de su destino (Módulo 4). |
 | `05_generar_historial_respaldos.sql` | Hace respaldos reales con ventas nuevas entre ellos. Ejecutarlo en días distintos da un promedio diario de crecimiento. Cada ejecución ocupa unos 250 MB en la carpeta `Backup` de la instancia. |
+| `06_generar_carga_rendimiento.sql` | Ejecuta reportes, búsquedas y actualizaciones sobre la base para que el Módulo 2 tenga consultas, sesiones y procesos que mostrar. Desactiva `AUTO_CLOSE` en `BASE_MONITOR` (ver `docs/modulo2-rendimiento.md`). Usar `-o NUL` para descartar los resultados. |
+| `prueba_sesiones_bloqueadas.sql` | Pasos para provocar un bloqueo en SSMS y verlo en el Módulo 2. |
 
 `-f 65001` en `sqlcmd` hace que lea los archivos como UTF-8; sin eso las tildes quedan mal
 guardadas.

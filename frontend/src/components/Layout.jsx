@@ -5,9 +5,9 @@ import useConsulta from '../hooks/useConsulta.js'
 /** Módulos del enunciado. Los que aún no tienen backend se marcan como pendientes. */
 const MODULOS = [
   { ruta: '/instancia', nombre: 'Instancia' },
-  { ruta: '/rendimiento', nombre: 'Rendimiento', pendiente: true },
+  { ruta: '/rendimiento', nombre: 'Rendimiento' },
   { ruta: '/almacenamiento', nombre: 'Almacenamiento' },
-  { ruta: '/respaldos', nombre: 'Respaldos', pendiente: true },
+  { ruta: '/respaldos', nombre: 'Respaldos' },
   { ruta: '/auditoria', nombre: 'Auditoría' },
   { ruta: '/mantenimiento', nombre: 'Mantenimiento' },
 ]
