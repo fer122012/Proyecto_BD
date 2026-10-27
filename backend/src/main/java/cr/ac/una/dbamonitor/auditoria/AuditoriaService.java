@@ -5,6 +5,7 @@ import cr.ac.una.dbamonitor.auditoria.dto.MiembroRolDto;
 import cr.ac.una.dbamonitor.auditoria.dto.ObjetoInvalidoDto;
 import cr.ac.una.dbamonitor.auditoria.dto.PrivilegioLoginDto;
 import cr.ac.una.dbamonitor.auditoria.dto.RolServidorDto;
+import cr.ac.una.dbamonitor.common.SqlIdentificadores;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -47,7 +48,9 @@ public class AuditoriaService {
         return auditoriaRepository.consultarPrivilegios();
     }
 
-    public List<ObjetoInvalidoDto> obtenerObjetosInvalidos() {
-        return auditoriaRepository.consultarObjetosInvalidos();
+    /** El nombre se valida antes de insertarlo en la consulta, para evitar inyección SQL. */
+    public List<ObjetoInvalidoDto> obtenerObjetosInvalidos(String baseDatos) {
+        return auditoriaRepository.consultarObjetosInvalidos(
+                SqlIdentificadores.validar(baseDatos, "La base de datos"));
     }
 }

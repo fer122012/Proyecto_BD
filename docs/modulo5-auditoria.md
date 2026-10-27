@@ -10,7 +10,8 @@ ejecutarse.
   - `GET /api/auditoria/logins`: logins registrados en el servidor
   - `GET /api/auditoria/roles`: roles de servidor con sus miembros
   - `GET /api/auditoria/privilegios`: permisos de servidor otorgados/denegados por login
-  - `GET /api/auditoria/objetos-invalidos`: objetos con dependencias sin resolver
+  - `GET /api/auditoria/objetos-invalidos?baseDatos=BASE_MONITOR`: objetos con dependencias sin
+    resolver dentro de la base indicada
 
 Igual que el Módulo 1, el backend lee las consultas directamente de los archivos `.sql`
 documentados (Maven los copia al classpath bajo `sql/`), así que el SQL que se ejecuta es
@@ -51,6 +52,25 @@ Vista  dbo.ReporteVentas
 Es una aproximación, no una garantía absoluta: cubre el caso más común y más fácil de
 demostrar (una tabla o columna eliminada después de crear el objeto que la usa), que es también
 el que pide la rúbrica del curso ("objetos inválidos o con errores de compilación").
+
+### Por qué se consulta una base específica y qué permiso necesita
+
+Las dependencias son propias de cada base de datos. La conexión del backend está en `master`,
+donde no hay objetos de las aplicaciones, así que consultar ahí siempre devolvería una lista
+vacía. Por eso la ruta recibe `baseDatos` y la consulta usa `{BASE}.sys.sql_expression_dependencies`
+(el nombre se valida con `SqlIdentificadores` antes de insertarlo). El esquema se obtiene de
+`{BASE}.sys.schemas`, porque `SCHEMA_NAME()` lo buscaría en `master` y devolvería `NULL`.
+
+`sys.sql_expression_dependencies` es una excepción entre las vistas de catálogo: por defecto solo
+la puede leer `db_owner`, y `VIEW ANY DEFINITION` **no alcanza**. Sin un permiso explícito, SQL
+Server responde *"Se denegó el permiso SELECT en el objeto 'sql_expression_dependencies'"*.
+`database/scripts/02_permisos_mantenimiento.sql` otorga `SELECT` sobre esa vista al usuario
+`dba_monitor` dentro de la base de práctica.
+
+En `BASE_MONITOR` aparecen tres objetos inválidos creados a propósito por
+`00_crear_base_monitor.sql`: la vista `ventas.vw_FacturasConDescuento` y el procedimiento
+`ventas.usp_AplicarDescuento` (la tabla `ventas.Descuento` se eliminó después de crearlos) y
+`rrhh.usp_CalcularBonos` (referencia la tabla `rrhh.Bono`, que nunca existió).
 
 ## Preguntas probables en la defensa
 
