@@ -38,7 +38,6 @@ sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\01_crear_login
 sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\00_crear_base_monitor.sql
 sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\02_permisos_mantenimiento.sql
 sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\03_permisos_almacenamiento.sql
-sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\04_permisos_respaldo.sql
 sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\05_generar_historial_respaldos.sql
 ```
 
