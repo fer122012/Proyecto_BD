@@ -1,7 +1,8 @@
 /**
  * Módulo 2 - Monitoreo de rendimiento.
  * <p>
- * Contendrá el controller, service y repository que exponen las consultas de rendimiento:
- * sentencias con mayor consumo, tiempos promedio, sesiones activas y bloqueos.
+ * Controller, service y repository que exponen las consultas de rendimiento:
+ * sentencias con mayor consumo, tiempos promedio, sesiones activas, bloqueos y
+ * procesos con mayor consumo de CPU o memoria.
  */
 package cr.ac.una.dbamonitor.rendimiento;
