@@ -13,6 +13,14 @@ export const instancia = {
   basesDeDatos: () => obtener('/api/instancia/bases-de-datos'),
 }
 
+export const rendimiento = {
+  consultasConsumo: () => obtener('/api/rendimiento/consultas-consumo'),
+  tiempoPromedio: () => obtener('/api/rendimiento/tiempo-promedio'),
+  sesiones: () => obtener('/api/rendimiento/sesiones'),
+  bloqueos: () => obtener('/api/rendimiento/bloqueos'),
+  procesos: (orden) => obtener(`/api/rendimiento/procesos?orden=${encodeURIComponent(orden)}`),
+}
+
 export const auditoria = {
   logins: () => obtener('/api/auditoria/logins'),
   roles: () => obtener('/api/auditoria/roles'),
