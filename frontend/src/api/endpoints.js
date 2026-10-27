@@ -21,6 +21,12 @@ export const rendimiento = {
   procesos: (orden) => obtener(`/api/rendimiento/procesos?orden=${encodeURIComponent(orden)}`),
 }
 
+export const respaldo = {
+  estadoPorBase: () => obtener('/api/respaldos'),
+  historial: (baseDatos) => obtener(conBase('/api/respaldos/historial', baseDatos)),
+  enCurso: () => obtener('/api/respaldos/en-curso'),
+}
+
 export const auditoria = {
   logins: () => obtener('/api/auditoria/logins'),
   roles: () => obtener('/api/auditoria/roles'),
