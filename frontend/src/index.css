@@ -367,6 +367,16 @@ button {
 
 /* ---------- Tablas ---------- */
 
+/* Sentencia SQL en una celda: una línea recortada; el texto completo va en el title. */
+.sql-corto {
+  display: block;
+  max-width: 360px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
 .tabla-contenedor {
   overflow-x: auto;
   margin: 0 -8px;
