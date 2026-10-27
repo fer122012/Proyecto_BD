@@ -25,7 +25,43 @@ ampliando conforme avancen los demás módulos y la interfaz web (`frontend/`).
 4. El backend queda escuchando en `http://localhost:8080`. Para comprobar que responde:
    `GET http://localhost:8080/api/salud`.
 
-## 2. Módulo 3 – Gestión del almacenamiento
+## 2. Módulo 2 – Monitoreo de rendimiento
+
+Responde a la pregunta: *¿qué está haciendo lenta a la instancia en este momento?*
+
+**Desde la interfaz web:** abrir `http://localhost:5173/rendimiento`. La portada muestra si hay
+sesiones bloqueadas (o cuántas sesiones activas hay) y el proceso que más consume. La casilla
+**Actualizar cada 15 s** refresca solos los bloqueos, los procesos y las sesiones. Debajo aparecen,
+en este orden:
+
+1. **Sesiones bloqueadas:** un mensaje que resume la situación ("No hay sesiones bloqueadas en este
+   momento" o cuántas hay y cuál es la sesión raíz). Si hay bloqueos, una tabla con la sesión
+   bloqueada, quién la bloquea, cuánto lleva esperando, las dos consultas y el estado: *Atención*
+   (menos de 30 s) o *Crítico* (30 s o más). Debajo se explica qué hacer con cada una.
+2. **Procesos con mayor consumo:** los 20 procesos que más CPU o memoria consumen. La lista
+   **Ordenar por** cambia entre CPU y memoria; la barra de cada fila compara el proceso con el mayor.
+3. **Consultas con mayor consumo de CPU:** las 20 sentencias con más CPU acumulado, con sus
+   ejecuciones, duración, lecturas y escrituras.
+4. **Tiempo promedio de ejecución:** las 20 sentencias más lentas por ejecución, con la duración
+   mínima y máxima.
+5. **Sesiones activas:** las sesiones de usuario conectadas y lo que están ejecutando.
+
+Las consultas largas se muestran recortadas; al pasar el cursor sobre ellas aparece el texto
+completo. El botón ⟳ vuelve a consultar todo. Si las secciones de consultas aparecen vacías, la
+instancia no ha tenido actividad: ejecutar `database/scripts/06_generar_carga_rendimiento.sql`
+(ver `docs/modulo2-rendimiento.md`).
+
+**Desde la API:**
+
+| Qué quiero ver | Cómo pedirlo |
+|---|---|
+| Sentencias con mayor consumo de CPU | `GET /api/rendimiento/consultas-consumo` |
+| Tiempo promedio por sentencia | `GET /api/rendimiento/tiempo-promedio` |
+| Sesiones activas | `GET /api/rendimiento/sesiones` |
+| Sesiones bloqueadas | `GET /api/rendimiento/bloqueos` |
+| Procesos por CPU o por memoria | `GET /api/rendimiento/procesos?orden=cpu` o `?orden=memoria` |
+
+## 3. Módulo 3 – Gestión del almacenamiento
 
 Responde a la pregunta: *¿cuánto ocupa cada base, qué tan llenos están sus filegroups, qué ocupa
 más espacio y cuánto ha crecido?*
@@ -59,7 +95,7 @@ El botón ⟳ vuelve a consultar todo.
 | Objetos más grandes | `GET /api/almacenamiento/objetos?baseDatos=BASE_MONITOR` |
 | Historial de crecimiento | `GET /api/almacenamiento/crecimiento?baseDatos=BASE_MONITOR` |
 
-## 3. Módulo 5 – Auditoría
+## 4. Módulo 5 – Auditoría
 
 Responde a la pregunta: *¿quién puede entrar al servidor, qué puede hacer y hay algún objeto
 roto que debería revisar?*
@@ -80,7 +116,7 @@ tiene control total de la instancia). Un login puede no tener privilegios indivi
 qué intentaba hacer referencia (`esquemaReferenciado`/`objetoReferenciado`) sin encontrarlo. Una
 lista vacía (`[]`) es buena señal: no se detectaron referencias rotas.
 
-## 4. Módulo 6 – Mantenimiento preventivo
+## 5. Módulo 6 – Mantenimiento preventivo
 
 Responde a la pregunta: *¿qué tablas necesitan que les recalcule las estadísticas, y puedo
 arreglar un objeto con errores de compilación desde aquí?*
@@ -89,7 +125,7 @@ Todas las solicitudes de este módulo necesitan indicar la base de datos de prá
 se está trabajando (por ejemplo `AdventureWorks`), porque la conexión del backend apunta a
 `master` (ver `docs/modulo6-mantenimiento.md` para el detalle).
 
-### 4.1 Consultar el estado de las estadísticas
+### 5.1 Consultar el estado de las estadísticas
 
 ```
 GET /api/mantenimiento/estadisticas?baseDatos=AdventureWorks
@@ -98,7 +134,7 @@ GET /api/mantenimiento/estadisticas?baseDatos=AdventureWorks
 Devuelve una lista ordenada con las tablas cuyas estadísticas conviene revisar primero (más
 filas modificadas desde la última actualización, o estadística más antigua).
 
-### 4.2 Recalcular las estadísticas de una tabla
+### 5.2 Recalcular las estadísticas de una tabla
 
 ```
 POST /api/mantenimiento/estadisticas/recalcular
@@ -127,7 +163,7 @@ La respuesta siempre indica si la acción tuvo éxito:
 Si `exito` es `false`, el campo `mensaje` explica qué revisar (por ejemplo que la tabla no
 exista, o que falte ejecutar `database/scripts/02_permisos_mantenimiento.sql`).
 
-### 4.3 Consultar y recompilar objetos con errores
+### 5.3 Consultar y recompilar objetos con errores
 
 ```
 GET /api/mantenimiento/objetos-invalidos?baseDatos=AdventureWorks
@@ -148,7 +184,7 @@ Content-Type: application/json
 La respuesta sigue el mismo formato que la de recalcular estadísticas (`exito`, `mensaje`,
 `objeto`, `fecha`).
 
-## 5. Errores comunes y qué significan
+## 6. Errores comunes y qué significan
 
 | Situación | Respuesta de la API | Qué hacer |
 |---|---|---|
@@ -158,9 +194,9 @@ La respuesta sigue el mismo formato que la de recalcular estadísticas (`exito`,
 | En el Módulo 3 se elige una base sin haber ejecutado `03_permisos_almacenamiento.sql` | HTTP 500, mensaje sobre permisos insuficientes | Ejecutar ese script sobre la base (ver sección 1). |
 | Una consulta de otro módulo falla inesperadamente | HTTP 500, mensaje genérico en español | El detalle técnico queda en el log del backend; revisarlo para diagnosticar. |
 
-## 6. Próximas secciones
+## 7. Próximas secciones
 
 Pendiente de completar conforme avance el proyecto:
-- Módulos 1, 2 y 4: capturas de pantalla y pasos de uso desde la interfaz web una vez que exista.
+- Módulos 1 y 4: capturas de pantalla y pasos de uso desde la interfaz web una vez que exista.
 - Módulos 5 y 6: capturas de pantalla y pasos de uso desde la interfaz web (por ahora, ver las
-  secciones 3 y 4 de este manual, que documentan el uso directo de la API).
+  secciones 4 y 5 de este manual, que documentan el uso directo de la API).
