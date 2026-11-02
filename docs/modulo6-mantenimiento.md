@@ -1,18 +1,21 @@
 # Módulo 6 – Mantenimiento preventivo
 
 A diferencia de los módulos 1, 2, 3, 4 y 5 (que solo **leen** información), este módulo también
-**ejecuta** dos acciones administrativas sobre la base de datos de práctica: recalcular
-estadísticas y forzar la recompilación de un objeto. Por eso su diseño incluye una capa extra de
+**ejecuta** acciones administrativas sobre la base de datos de práctica: recalcular
+estadísticas, recompilar un objeto y validar todos los objetos de la base. Por eso su diseño incluye una capa extra de
 validación que los demás módulos no necesitan.
 
-- Consultas y plantillas de acción: `database/queries/modulo6_mantenimiento/` (01 a 04)
+- Consultas y plantillas de acción: `database/queries/modulo6_mantenimiento/` (01 a 05)
 - Código: paquete `cr.ac.una.dbamonitor.mantenimiento` (controller, service, repository y `dto/`)
 - Permisos adicionales: `database/scripts/02_permisos_mantenimiento.sql`
 - Endpoints:
   - `GET /api/mantenimiento/estadisticas?baseDatos=...`: estado de las estadísticas de las tablas
   - `GET /api/mantenimiento/objetos-invalidos?baseDatos=...`: objetos candidatos a recompilar
   - `POST /api/mantenimiento/estadisticas/recalcular`: ejecuta `UPDATE STATISTICS`
-  - `POST /api/mantenimiento/objetos/recompilar`: ejecuta `sp_recompile`
+  - `POST /api/mantenimiento/objetos/recompilar`: ejecuta `sp_refreshsqlmodule` y `sp_recompile`, y
+    verifica si el objeto sigue con referencias rotas
+  - `POST /api/mantenimiento/objetos/validar?baseDatos=...`: busca errores de compilación en toda la
+    base sin dejar cambios
 
 ## Por qué este módulo recibe `baseDatos` en cada solicitud
 
@@ -30,18 +33,18 @@ partes (`base.esquema.objeto`), sin necesidad de cambiar la base de datos activa
 | Indicador (endpoint) | Fuente | Cómo interpretarlo |
 |---|---|---|
 | Estadísticas (`/estadisticas`) | `sys.dm_db_stats_properties` | Por cada estadística de cada tabla de usuario: cuándo se actualizó por última vez (`ultimaActualizacion`), cuántas filas tiene (`filas`) y cuántas han cambiado desde la última actualización (`filasModificadas`). La lista llega ordenada con las más desactualizadas primero (más cambios sin reflejar, luego más antiguas), para priorizar sobre cuáles conviene recalcular. Si `ultimaActualizacion` es `null`, SQL Server **nunca calculó** esa estadística (por ejemplo, un índice creado sobre una tabla vacía que luego se llenó): aparece primero, como "Nunca", y se recomienda recalcularla. |
-| Objetos candidatos (`/objetos-invalidos`) | `sys.sql_expression_dependencies` | Mismo criterio que el Módulo 5 (ver `docs/modulo5-auditoria.md`), aplicado sobre la base de práctica indicada. Son los objetos que conviene recompilar para confirmar si de verdad tienen un error. Requiere `SELECT` sobre esa vista dentro de la base (`02_permisos_mantenimiento.sql`). |
+| Objetos candidatos (`/objetos-invalidos`) | `sys.sql_expression_dependencies` | Mismo criterio que el Módulo 5 (ver `docs/modulo5-auditoria.md`), aplicado sobre la base de práctica indicada. Son los objetos a los que les falta una tabla u otro objeto de la misma base. Requiere `SELECT` sobre esa vista dentro de la base (`02_permisos_mantenimiento.sql`). |
 
 Las dos consultas obtienen el esquema de `{BASE}.sys.schemas` y no con `SCHEMA_NAME()`: como la
 conexión está en `master`, esa función buscaba el esquema en `master` y devolvía `NULL` para
 cualquier esquema distinto de `dbo`, con lo que "Recalcular" y "Recompilar" recibían un esquema
 vacío y fallaban.
 
-Por el mismo motivo, `sp_recompile` se invoca como `[BASE].sys.sp_recompile N'[esquema].[objeto]'`:
-ese procedimiento solo busca el objeto en la base actual, y si se le pasa el nombre de tres partes
+Por el mismo motivo, `sp_recompile` se invoca como `[BASE].sys.sp_recompile N'[esquema].[objeto]'`
+(y `sp_refreshsqlmodule` de la misma forma): ese procedimiento solo busca el objeto en la base actual, y si se le pasa el nombre de tres partes
 desde `master` responde con el error 15165 ("No se encontró el objeto").
 
-## Las dos acciones administrativas
+## Las acciones administrativas
 
 ### Recalcular estadísticas — `UPDATE STATISTICS ... WITH FULLSCAN`
 
@@ -59,14 +62,38 @@ Antes:  Ventas (10 000 filas, estadística con fecha de hace 3 meses, 40 % de fi
 Después: Ventas (estadística con fecha de hoy, 0 % de filas modificadas desde el recálculo)
 ```
 
-### Recompilar un objeto — `sp_recompile`
+### Recompilar un objeto — `sp_refreshsqlmodule` y `sp_recompile`
 
-`sp_recompile` marca un procedimiento, función o disparador para que SQL Server descarte su plan
-en caché y lo compile de nuevo en la siguiente ejecución. Es el equivalente en SQL Server a
-`ALTER ... COMPILE` de Oracle: **no "repara" el objeto**, pero sí lo recompila, lo que obliga a
-SQL Server a volver a resolver sus referencias de inmediato (en vez de esperar a que alguien lo
-ejecute) y revela cualquier error de compilación pendiente, como los detectados en
-`/objetos-invalidos`.
+`sp_recompile` es lo más cercano a `ALTER ... COMPILE` de Oracle: marca el objeto para que SQL
+Server descarte su plan en caché y lo compile en la siguiente ejecución. Pero **no lo valida**:
+responde que terminó bien aunque el objeto siga roto. Por eso la acción tiene tres pasos:
+
+1. `sp_refreshsqlmodule` vuelve a analizar el objeto. Falla si una columna ya no existe o si a una
+   vista le falta una tabla, y ese error de SQL Server se muestra al usuario.
+2. `sp_recompile` descarta el plan en caché.
+3. El backend vuelve a consultar `/objetos-invalidos`. Si el objeto sigue ahí, devuelve
+   `exito = false` e indica lo que falta, porque a un procedimiento le puede faltar una tabla sin
+   que los dos pasos anteriores den error.
+
+Recompilar **no repara** un objeto: hay que crear lo que falta o corregirlo con `ALTER`. Si se crea
+la tabla que faltaba, la referencia se resuelve y la acción confirma el éxito.
+
+| Situación probada | Resultado |
+|---|---|
+| Procedimiento al que le falta una tabla | `exito = false`, indica la tabla que no existe |
+| Objeto que usa una columna eliminada | `exito = false`, con el error de SQL Server |
+| Objeto correcto, o procedimiento después de crear su tabla | `exito = true` |
+| Objeto que no existe | `exito = false`, con el error de SQL Server |
+
+### Validar los objetos de la base — `sp_refreshsqlmodule` con `ROLLBACK`
+
+`/objetos-invalidos` lee el catálogo de dependencias, que no detecta columnas eliminadas: la tabla
+sigue existiendo, así que la referencia aparece resuelta. El botón **Validar objetos** ejecuta
+`sp_refreshsqlmodule` sobre cada vista, procedimiento y función y muestra el error que devuelva cada
+uno. Cada intento va en una transacción que siempre se revierte, para no cambiar los metadatos.
+
+Es más costosa que leer el catálogo y necesita el permiso `ALTER`, así que solo se ejecuta cuando el
+usuario la pide. Las dos revisiones se complementan, por lo que un objeto puede aparecer en ambas.
 
 ## Seguridad: por qué el nombre de tabla u objeto no es un parámetro de consulta
 
@@ -88,11 +115,12 @@ comillas (un enfoque frágil) ni de construir el SQL a mano en cada llamada.
 
 ## Cómo se confirma el resultado al usuario
 
-Las dos acciones devuelven siempre un `ResultadoAccionDto` (`exito`, `mensaje`, `objeto`,
+Recalcular y recompilar devuelven siempre un `ResultadoAccionDto` (`exito`, `mensaje`, `objeto`,
 `fecha`), nunca dejan que una falla de SQL Server se propague como un error 500 genérico: el
 `MantenimientoService` captura la excepción, registra el detalle técnico en el log y devuelve
 `exito = false` con un mensaje en español que explica qué revisar (por ejemplo, que la tabla
-exista o que el login tenga el permiso `ALTER`).
+exista o que el login tenga el permiso `ALTER`). Al recompilar, el mensaje incluye el error que dio
+SQL Server, y `exito` también es `false` si el objeto terminó sin errores pero sigue inválido.
 
 ```json
 // Éxito

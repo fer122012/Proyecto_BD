@@ -8,10 +8,10 @@
   - SELECT sobre sys.sql_expression_dependencies: la vista con la que los Módulos 5 y 6
     detectan objetos inválidos. Es una excepción entre las vistas de catálogo: por defecto
     solo la puede leer db_owner, y VIEW ANY DEFINITION no alcanza.
-  - El rol db_ddladmin, porque el Módulo 6 EJECUTA dos acciones administrativas:
+  - El rol db_ddladmin, porque el Módulo 6 EJECUTA acciones administrativas:
       - UPDATE STATISTICS (recalcular estadísticas)
-      - sp_recompile (forzar la recompilación de un objeto)
-    Ambas requieren el permiso ALTER sobre la tabla u objeto, dentro de la base de datos donde
+      - sp_refreshsqlmodule y sp_recompile (recompilar un objeto y validar los de la base)
+    Todas requieren el permiso ALTER sobre la tabla u objeto, dentro de la base de datos donde
     vive ese objeto. Los permisos de servidor no alcanzan.
 
   Usa la base de práctica del grupo, BASE_MONITOR (00_crear_base_monitor.sql). Para otra base,
@@ -34,7 +34,7 @@ GRANT SELECT ON sys.sql_expression_dependencies TO dba_monitor;
 GO
 
 -- db_ddladmin: permite ejecutar DDL y comandos de mantenimiento (ALTER TABLE, UPDATE STATISTICS,
--- sp_recompile) sobre los objetos de esta base, SIN dar acceso a los datos que contienen
+-- sp_refreshsqlmodule, sp_recompile) sobre los objetos de esta base, SIN dar acceso a los datos que contienen
 -- (a diferencia de db_owner, que sí tendría acceso total).
 ALTER ROLE db_ddladmin ADD MEMBER dba_monitor;
 GO

@@ -2,6 +2,7 @@ package cr.ac.una.dbamonitor.mantenimiento;
 
 import cr.ac.una.dbamonitor.mantenimiento.dto.EstadisticaTablaDto;
 import cr.ac.una.dbamonitor.mantenimiento.dto.ObjetoCandidatoDto;
+import cr.ac.una.dbamonitor.mantenimiento.dto.ObjetoConErrorDto;
 import cr.ac.una.dbamonitor.mantenimiento.dto.RecalcularEstadisticasRequest;
 import cr.ac.una.dbamonitor.mantenimiento.dto.RecompilarObjetoRequest;
 import cr.ac.una.dbamonitor.mantenimiento.dto.ResultadoAccionDto;
@@ -51,7 +52,13 @@ public class MantenimientoController {
         return mantenimientoService.recalcularEstadisticas(solicitud);
     }
 
-    /** Ejecuta sp_recompile sobre el objeto indicado y confirma el resultado. */
+    /** Valida las vistas, procedimientos y funciones de la base sin dejar cambios y devuelve los que fallan. */
+    @PostMapping("/objetos/validar")
+    public List<ObjetoConErrorDto> validarObjetos(@RequestParam String baseDatos) {
+        return mantenimientoService.validarObjetos(baseDatos);
+    }
+
+    /** Recompila el objeto indicado y confirma si quedó sin referencias rotas. */
     @PostMapping("/objetos/recompilar")
     public ResultadoAccionDto recompilarObjeto(@Valid @RequestBody RecompilarObjetoRequest solicitud) {
         return mantenimientoService.recompilarObjeto(solicitud);

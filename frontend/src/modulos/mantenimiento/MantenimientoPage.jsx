@@ -22,10 +22,16 @@ const porcentajeModificado = (e) => {
 /** A partir de este porcentaje se recomienda recalcular la estadística. */
 const UMBRAL_DESACTUALIZADA = 20
 
-/** Módulo 6: recalcular estadísticas y recompilar objetos inválidos. */
+const COLUMNAS_VALIDACION = [
+  { titulo: 'Objeto', clase: 'mono', valor: (o) => `${o.esquema}.${o.objeto}` },
+  { titulo: 'Tipo', valor: (o) => o.tipo },
+  { titulo: 'Error de SQL Server', clase: 'mono', valor: (o) => <span style={{ color: 'var(--error)' }}>{o.error}</span> },
+]
+
+/** Módulo 6: recalcular estadísticas, recompilar y validar objetos. */
 export default function MantenimientoPage() {
   const bases = useConsulta(instancia.basesDeDatos)
-  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE')
+  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE' && b.tieneAcceso)
   const [baseElegida, setBaseElegida] = useState('')
   const base = baseElegida || basesUsuario[0]?.nombre || ''
 
@@ -34,6 +40,7 @@ export default function MantenimientoPage() {
 
   const [accionEnCurso, setAccionEnCurso] = useState(null)
   const [resultado, setResultado] = useState(null)
+  const [validacion, setValidacion] = useState(null)
 
   async function ejecutar(clave, accion, recargar) {
     setAccionEnCurso(clave)
@@ -41,6 +48,19 @@ export default function MantenimientoPage() {
     try {
       setResultado(await accion())
       recargar()
+    } catch (error) {
+      setResultado({ exito: false, mensaje: error.message })
+    } finally {
+      setAccionEnCurso(null)
+    }
+  }
+
+  async function validarObjetos() {
+    setAccionEnCurso('validar')
+    setResultado(null)
+    setValidacion(null)
+    try {
+      setValidacion(await mantenimiento.validarObjetos(base))
     } catch (error) {
       setResultado({ exito: false, mensaje: error.message })
     } finally {
@@ -155,6 +175,7 @@ export default function MantenimientoPage() {
               onChange={(e) => {
                 setBaseElegida(e.target.value)
                 setResultado(null)
+                setValidacion(null)
               }}
               disabled={basesUsuario.length === 0}
             >
@@ -177,7 +198,7 @@ export default function MantenimientoPage() {
       <div className="contenido">
         {bases.error && <MensajeError mensaje={bases.error} onReintentar={bases.recargar} />}
         {bases.datos && basesUsuario.length === 0 && (
-          <div className="mensaje error">La instancia no tiene bases de datos de usuario en línea sobre las cuales trabajar.</div>
+          <div className="mensaje error">No hay bases de usuario en línea a las que la aplicación tenga acceso. Ejecute el script de permisos 02 sobre la base en la que quiera trabajar.</div>
         )}
 
         {resultado && (
@@ -223,7 +244,12 @@ export default function MantenimientoPage() {
             </section>
 
             <section className="bloque">
-              <h2 className="etiqueta">Objetos inválidos o con errores</h2>
+              <div className="bloque-encabezado">
+                <h2 className="etiqueta">Objetos inválidos o con errores</h2>
+                <button type="button" className="boton" disabled={accionEnCurso !== null} onClick={validarObjetos}>
+                  {accionEnCurso === 'validar' ? 'Validando…' : 'Validar objetos'}
+                </button>
+              </div>
               <ContenidoConsulta consulta={objetos} vacio="No hay objetos con dependencias rotas en esta base.">
                 {(datos) => (
                   <Tabla
@@ -233,6 +259,19 @@ export default function MantenimientoPage() {
                   />
                 )}
               </ContenidoConsulta>
+              {validacion && (
+                <>
+                  <h3 className="etiqueta">Resultado de la validación</h3>
+                  {validacion.length === 0 ? (
+                    <p className="tenue" style={{ margin: 0, fontSize: 13 }}>
+                      Ninguna vista, procedimiento o función devolvió errores al validarla. Un procedimiento al que le falta
+                      una tabla no da error aquí: aparece en la lista de arriba.
+                    </p>
+                  ) : (
+                    <Tabla columnas={COLUMNAS_VALIDACION} filas={validacion} clave={(o) => `${o.esquema}.${o.objeto}`} />
+                  )}
+                </>
+              )}
             </section>
           </>
         )}

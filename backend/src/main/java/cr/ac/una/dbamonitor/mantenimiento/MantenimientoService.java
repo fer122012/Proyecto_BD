@@ -3,6 +3,7 @@ package cr.ac.una.dbamonitor.mantenimiento;
 import cr.ac.una.dbamonitor.common.SqlIdentificadores;
 import cr.ac.una.dbamonitor.mantenimiento.dto.EstadisticaTablaDto;
 import cr.ac.una.dbamonitor.mantenimiento.dto.ObjetoCandidatoDto;
+import cr.ac.una.dbamonitor.mantenimiento.dto.ObjetoConErrorDto;
 import cr.ac.una.dbamonitor.mantenimiento.dto.RecalcularEstadisticasRequest;
 import cr.ac.una.dbamonitor.mantenimiento.dto.RecompilarObjetoRequest;
 import cr.ac.una.dbamonitor.mantenimiento.dto.ResultadoAccionDto;
@@ -16,8 +17,8 @@ import java.util.List;
 
 /**
  * Lógica del Módulo 6: consulta el estado de las estadísticas y de los objetos con
- * dependencias sin resolver, y ejecuta las dos acciones administrativas (recalcular
- * estadísticas y recompilar un objeto).
+ * dependencias sin resolver, y ejecuta las acciones administrativas (recalcular estadísticas,
+ * recompilar un objeto y validar todos los objetos de una base).
  * <p>
  * Antes de construir cualquier SQL dinámico, valida los identificadores que eligió el usuario
  * (base de datos, esquema, tabla u objeto) con {@link SqlIdentificadores}, para evitar
@@ -42,6 +43,11 @@ public class MantenimientoService {
 
     public List<ObjetoCandidatoDto> obtenerObjetosInvalidos(String baseDatos) {
         return mantenimientoRepository.consultarObjetosInvalidos(validarBase(baseDatos));
+    }
+
+    /** Busca errores de compilación en las vistas, procedimientos y funciones de la base. */
+    public List<ObjetoConErrorDto> validarObjetos(String baseDatos) {
+        return mantenimientoRepository.validarObjetos(validarBase(baseDatos));
     }
 
     public ResultadoAccionDto recalcularEstadisticas(RecalcularEstadisticasRequest solicitud) {
@@ -69,15 +75,37 @@ public class MantenimientoService {
         String objeto = base + "." + esquema + "." + nombreObjeto;
         try {
             mantenimientoRepository.recompilarObjeto(base, esquema, nombreObjeto);
+            // Recompilar no repara el objeto: hay que comprobar si todavía le falta algo.
+            List<String> referenciasRotas = buscarReferenciasRotas(base, esquema, nombreObjeto);
+            if (!referenciasRotas.isEmpty()) {
+                log.info("Objeto recompilado, pero con referencias rotas: {} -> {}", objeto, referenciasRotas);
+                return new ResultadoAccionDto(false,
+                        "Se recompiló, pero el objeto sigue inválido porque no existe: "
+                                + String.join(", ", referenciasRotas)
+                                + ". Cree lo que falta o corrija el objeto con ALTER y vuelva a recompilar.",
+                        objeto, LocalDateTime.now());
+            }
             log.info("Objeto recompilado: {}", objeto);
-            return new ResultadoAccionDto(true, "El objeto se marcó para recompilación correctamente.", objeto, LocalDateTime.now());
+            return new ResultadoAccionDto(true, "El objeto se recompiló y no tiene referencias rotas.", objeto, LocalDateTime.now());
         } catch (DataAccessException ex) {
             log.warn("No se pudo recompilar {}: {}", objeto, ex.getMessage());
             return new ResultadoAccionDto(false,
-                    "No se pudo recompilar el objeto. Verifique que exista y que el usuario de la "
-                            + "aplicación tenga el permiso ALTER sobre él (rol db_ddladmin).",
+                    "No se pudo recompilar el objeto. SQL Server respondió: " + ex.getMostSpecificCause().getMessage(),
                     objeto, LocalDateTime.now());
         }
+    }
+
+    private List<String> buscarReferenciasRotas(String base, String esquema, String nombreObjeto) {
+        return mantenimientoRepository.consultarObjetosInvalidos(base).stream()
+                .filter(candidato -> esquema.equals(candidato.esquema()) && nombreObjeto.equals(candidato.objeto()))
+                .map(MantenimientoService::nombreReferencia)
+                .toList();
+    }
+
+    private static String nombreReferencia(ObjetoCandidatoDto candidato) {
+        return candidato.esquemaReferenciado() == null
+                ? candidato.objetoReferenciado()
+                : candidato.esquemaReferenciado() + "." + candidato.objetoReferenciado();
     }
 
     private static String validarBase(String baseDatos) {
