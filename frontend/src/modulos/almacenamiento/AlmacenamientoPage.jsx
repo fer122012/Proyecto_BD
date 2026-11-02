@@ -87,7 +87,7 @@ const COLUMNAS_CRECIMIENTO = [
 /** Módulo 3: espacio por filegroup, tamaño de la base, archivos, objetos y crecimiento. */
 export default function AlmacenamientoPage() {
   const bases = useConsulta(almacenamiento.basesDeDatos)
-  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE')
+  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE' && b.tieneAcceso)
   const [baseElegida, setBaseElegida] = useState('')
   const base = baseElegida || basesUsuario[0]?.nombre || ''
 
@@ -149,7 +149,7 @@ export default function AlmacenamientoPage() {
       <div className="contenido">
         {bases.error && <MensajeError mensaje={bases.error} onReintentar={bases.recargar} />}
         {bases.datos && basesUsuario.length === 0 && (
-          <div className="mensaje error">La instancia no tiene bases de datos de usuario en línea para analizar.</div>
+          <div className="mensaje error">No hay bases de usuario en línea a las que la aplicación tenga acceso. Ejecute los scripts de permisos 02 y 03 sobre la base que quiera analizar.</div>
         )}
 
         {base && (

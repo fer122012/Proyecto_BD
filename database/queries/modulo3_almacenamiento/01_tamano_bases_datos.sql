@@ -8,6 +8,8 @@
    - tamano_log_mb:   suma de los archivos de log de transacciones (.ldf).
    - tamano_total_mb: datos + log.
    - cantidad_archivos: número de archivos físicos de la base.
+   - tiene_acceso:    1 si el login de la aplicación puede entrar a la base (HAS_DBACCESS). Sin
+                      acceso se conoce su tamaño, pero no sus filegroups, archivos ni objetos.
 
    La columna size está en páginas de 8 KB, por eso se multiplica por 8 y se divide entre 1024
    para obtener MB. Los archivos FILESTREAM y de OLTP en memoria (tipos 2 y 3) no se cuentan
@@ -23,7 +25,8 @@ SELECT
     CAST(SUM(CASE WHEN f.type = 0 THEN f.size ELSE 0 END) * 8 / 1024.0 AS DECIMAL(18, 2)) AS tamano_datos_mb,
     CAST(SUM(CASE WHEN f.type = 1 THEN f.size ELSE 0 END) * 8 / 1024.0 AS DECIMAL(18, 2)) AS tamano_log_mb,
     CAST(SUM(f.size) * 8 / 1024.0 AS DECIMAL(18, 2))                     AS tamano_total_mb,
-    COUNT(*)                                                             AS cantidad_archivos
+    COUNT(*)                                                             AS cantidad_archivos,
+    CAST(ISNULL(HAS_DBACCESS(d.name), 0) AS BIT)                         AS tiene_acceso
 FROM sys.databases AS d
 JOIN sys.master_files AS f ON f.database_id = d.database_id
 WHERE f.type IN (0, 1)

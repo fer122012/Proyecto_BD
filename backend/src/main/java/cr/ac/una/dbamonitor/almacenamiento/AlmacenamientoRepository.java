@@ -50,7 +50,8 @@ public class AlmacenamientoRepository {
                         fila.getDouble("tamano_datos_mb"),
                         fila.getDouble("tamano_log_mb"),
                         fila.getDouble("tamano_total_mb"),
-                        fila.getInt("cantidad_archivos")));
+                        fila.getInt("cantidad_archivos"),
+                        fila.getBoolean("tiene_acceso")));
     }
 
     /** @param baseDatos nombre de base de datos ya validado (sin corchetes) */

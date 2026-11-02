@@ -11,6 +11,8 @@
   - fecha_creacion:        fecha y hora de creación de la base.
   - es_sistema:            1 para las bases del sistema (master, tempdb, model, msdb;
                            database_id <= 4), 0 para las bases de usuario.
+  - tiene_acceso:          1 si el login de la aplicación puede entrar a la base (HAS_DBACCESS).
+                           Los módulos 3, 5 y 6 solo ofrecen estas bases en su selector.
 
   Fuente: vista de catálogo sys.databases.
   Permiso requerido: VIEW ANY DATABASE (lo tiene el rol public de forma predeterminada).
@@ -22,6 +24,7 @@ SELECT
     recovery_model_desc                                     AS modelo_recuperacion,
     compatibility_level                                     AS nivel_compatibilidad,
     create_date                                             AS fecha_creacion,
-    CAST(CASE WHEN database_id <= 4 THEN 1 ELSE 0 END AS BIT) AS es_sistema
+    CAST(CASE WHEN database_id <= 4 THEN 1 ELSE 0 END AS BIT) AS es_sistema,
+    CAST(ISNULL(HAS_DBACCESS(name), 0) AS BIT)              AS tiene_acceso
 FROM sys.databases
 ORDER BY name;
