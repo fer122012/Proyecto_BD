@@ -2,8 +2,11 @@ package cr.ac.una.dbamonitor.auditoria;
 
 import cr.ac.una.dbamonitor.auditoria.dto.LoginDto;
 import cr.ac.una.dbamonitor.auditoria.dto.ObjetoInvalidoDto;
+import cr.ac.una.dbamonitor.auditoria.dto.PrivilegioBaseDto;
 import cr.ac.una.dbamonitor.auditoria.dto.PrivilegioLoginDto;
+import cr.ac.una.dbamonitor.auditoria.dto.RolBaseDto;
 import cr.ac.una.dbamonitor.auditoria.dto.RolServidorDto;
+import cr.ac.una.dbamonitor.auditoria.dto.UsuarioBaseDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,5 +52,23 @@ public class AuditoriaController {
     @GetMapping("/objetos-invalidos")
     public List<ObjetoInvalidoDto> obtenerObjetosInvalidos(@RequestParam String baseDatos) {
         return auditoriaService.obtenerObjetosInvalidos(baseDatos);
+    }
+
+    /** Usuarios de la base indicada y el login al que está asociado cada uno. */
+    @GetMapping("/usuarios-base")
+    public List<UsuarioBaseDto> obtenerUsuariosBase(@RequestParam String baseDatos) {
+        return auditoriaService.obtenerUsuariosBase(baseDatos);
+    }
+
+    /** Roles de la base indicada con sus miembros. */
+    @GetMapping("/roles-base")
+    public List<RolBaseDto> obtenerRolesBase(@RequestParam String baseDatos) {
+        return auditoriaService.obtenerRolesBase(baseDatos);
+    }
+
+    /** Permisos otorgados o denegados a usuarios y roles de la base indicada. */
+    @GetMapping("/privilegios-base")
+    public List<PrivilegioBaseDto> obtenerPrivilegiosBase(@RequestParam String baseDatos) {
+        return auditoriaService.obtenerPrivilegiosBase(baseDatos);
     }
 }

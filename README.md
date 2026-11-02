@@ -45,6 +45,12 @@ sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\05_generar_his
 Esto crea el login `dba_monitor` y la base de práctica **`BASE_MONITOR`**, con datos de ejemplo,
 sus permisos y un historial de respaldos.
 
+Para que el Módulo 2 tenga consultas que mostrar, ejecutar justo antes de usarlo:
+
+```
+sqlcmd -S localhost\SQLEXPRESS -E -C -f 65001 -i database\scripts\06_generar_carga_rendimiento.sql -o NUL
+```
+
 ### 3. Configurar el backend
 En `backend/src/main/resources/`, copiar `application-example.properties` como
 `application-local.properties` y poner la contraseña del paso 2. Ese archivo no se sube a Git.
@@ -64,4 +70,5 @@ Abrir **http://localhost:5173**.
 ## Más información
 - [Instalación detallada y solución de problemas](docs/instalacion.md)
 - [Manual de usuario](docs/manual-usuario.md)
+- [Arquitectura y decisiones de diseño](docs/arquitectura.md)
 - Documentación de cada módulo en [`docs/`](docs/)

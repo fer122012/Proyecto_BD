@@ -11,5 +11,6 @@ public record BaseDatosDto(
         String modeloRecuperacion,
         int nivelCompatibilidad,
         LocalDateTime fechaCreacion,
-        boolean esSistema) {
+        boolean esSistema,
+        boolean tieneAcceso) {
 }

@@ -32,6 +32,9 @@ export const auditoria = {
   roles: () => obtener('/api/auditoria/roles'),
   privilegios: () => obtener('/api/auditoria/privilegios'),
   objetosInvalidos: (baseDatos) => obtener(conBase('/api/auditoria/objetos-invalidos', baseDatos)),
+  usuariosBase: (baseDatos) => obtener(conBase('/api/auditoria/usuarios-base', baseDatos)),
+  rolesBase: (baseDatos) => obtener(conBase('/api/auditoria/roles-base', baseDatos)),
+  privilegiosBase: (baseDatos) => obtener(conBase('/api/auditoria/privilegios-base', baseDatos)),
 }
 
 export const almacenamiento = {
@@ -47,4 +50,5 @@ export const mantenimiento = {
   objetosInvalidos: (baseDatos) => obtener(conBase('/api/mantenimiento/objetos-invalidos', baseDatos)),
   recalcularEstadisticas: (solicitud) => enviar('/api/mantenimiento/estadisticas/recalcular', solicitud),
   recompilarObjeto: (solicitud) => enviar('/api/mantenimiento/objetos/recompilar', solicitud),
+  validarObjetos: (baseDatos) => enviar(conBase('/api/mantenimiento/objetos/validar', baseDatos)),
 }

@@ -37,6 +37,24 @@ const COLUMNAS_PRIVILEGIOS = [
   },
 ]
 
+const COLUMNAS_USUARIOS_BASE = [
+  { titulo: 'Usuario', clase: 'mono', valor: (u) => u.nombre },
+  { titulo: 'Tipo', valor: (u) => u.tipo },
+  { titulo: 'Login asociado', clase: 'mono', valor: (u) => u.loginAsociado ?? <span className="tenue">Sin login</span> },
+  { titulo: 'Esquema', clase: 'mono tenue', valor: (u) => u.esquemaPredeterminado ?? '—' },
+  { titulo: 'Creado', clase: 'mono tenue', valor: (u) => fecha(u.fechaCreacion) },
+]
+
+const COLUMNAS_PRIVILEGIOS_BASE = [
+  { titulo: 'Usuario o rol', clase: 'mono', valor: (p) => p.principal },
+  { titulo: 'Permiso', valor: (p) => p.permiso },
+  {
+    titulo: 'Estado',
+    valor: (p) => <span className={`chip ${p.estado === 'DENY' ? 'error' : 'ok'}`}>{p.estado.replaceAll('_', ' ')}</span>,
+  },
+  { titulo: 'Recurso', clase: 'mono', valor: (p) => p.recurso ?? <span className="tenue">Toda la base</span> },
+]
+
 const COLUMNAS_OBJETOS = [
   { titulo: 'Esquema', clase: 'mono', valor: (o) => o.esquema },
   { titulo: 'Objeto', clase: 'mono', valor: (o) => o.objeto },
@@ -53,7 +71,33 @@ const COLUMNAS_OBJETOS = [
   },
 ]
 
-/** Módulo 5: logins, roles, privilegios y objetos con dependencias rotas. */
+/** Roles con sus miembros; sirve para los roles de servidor y los de una base. */
+function ListaRoles({ roles }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14 }}>
+      {roles.map((rol) => (
+        <div key={rol.rol} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span className="mono" style={{ fontWeight: 500 }}>
+            {rol.rol}
+          </span>
+          {rol.miembros.length === 0 ? (
+            <span className="tenue">Sin miembros</span>
+          ) : (
+            <div className="chips" style={{ gap: 6 }}>
+              {rol.miembros.map((miembro) => (
+                <span key={miembro} className="chip mono" style={{ fontSize: 12 }}>
+                  {miembro}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Módulo 5: logins, usuarios, roles, privilegios y objetos con dependencias rotas. */
 export default function AuditoriaPage() {
   const logins = useConsulta(auditoria.logins)
   const roles = useConsulta(auditoria.roles)
@@ -62,18 +106,25 @@ export default function AuditoriaPage() {
 
   // Las dependencias son propias de cada base: se revisan en la base de usuario elegida.
   const bases = useConsulta(instancia.basesDeDatos)
-  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE')
+  const basesUsuario = (bases.datos ?? []).filter((b) => !b.esSistema && b.estado === 'ONLINE' && b.tieneAcceso)
   const [baseElegida, setBaseElegida] = useState('')
   const base = baseElegida || basesUsuario[0]?.nombre || ''
   const objetos = useConsulta(base ? () => auditoria.objetosInvalidos(base) : null, [base])
+  const usuariosBase = useConsulta(base ? () => auditoria.usuariosBase(base) : null, [base])
+  const rolesBase = useConsulta(base ? () => auditoria.rolesBase(base) : null, [base])
+  const privilegiosBase = useConsulta(base ? () => auditoria.privilegiosBase(base) : null, [base])
 
   const actualizarTodo = () => {
     logins.recargar()
     roles.recargar()
     privilegios.recargar()
     objetos.recargar()
+    usuariosBase.recargar()
+    rolesBase.recargar()
+    privilegiosBase.recargar()
   }
-  const cargando = logins.cargando || roles.cargando || privilegios.cargando || objetos.cargando
+  const cargando =
+    logins.cargando || roles.cargando || privilegios.cargando || objetos.cargando || usuariosBase.cargando || rolesBase.cargando || privilegiosBase.cargando
 
   const listaLogins = logins.datos ?? []
   const sysadmins = listaLogins.filter((l) => l.esSysadmin).length
@@ -137,28 +188,7 @@ export default function AuditoriaPage() {
           <section className="bloque">
             <h2 className="etiqueta">Roles de servidor y miembros</h2>
             <ContenidoConsulta consulta={roles} vacio="No se encontraron roles de servidor.">
-              {(datos) => (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14 }}>
-                  {datos.map((rol) => (
-                    <div key={rol.rol} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <span className="mono" style={{ fontWeight: 500 }}>
-                        {rol.rol}
-                      </span>
-                      {rol.miembros.length === 0 ? (
-                        <span className="tenue">Sin miembros</span>
-                      ) : (
-                        <div className="chips" style={{ gap: 6 }}>
-                          {rol.miembros.map((miembro) => (
-                            <span key={miembro} className="chip mono" style={{ fontSize: 12 }}>
-                              {miembro}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {(datos) => <ListaRoles roles={datos} />}
             </ContenidoConsulta>
           </section>
 
@@ -182,7 +212,7 @@ export default function AuditoriaPage() {
 
         <section className="bloque">
           <div className="bloque-encabezado">
-            <h2 className="etiqueta">Objetos con dependencias rotas</h2>
+            <h2 className="etiqueta">Usuarios de la base de datos</h2>
             <label className="campo" htmlFor="base-objetos">
               Base de datos
               <select
@@ -202,9 +232,45 @@ export default function AuditoriaPage() {
           </div>
           {bases.error && <MensajeError mensaje={bases.error} onReintentar={bases.recargar} />}
           {bases.datos && basesUsuario.length === 0 && (
-            <SinDatos>La instancia no tiene bases de datos de usuario en línea para revisar.</SinDatos>
+            <SinDatos>No hay bases de usuario en línea a las que la aplicación tenga acceso. Ejecute el script de permisos 02 sobre la base que quiera revisar.</SinDatos>
           )}
           {base && (
+            <ContenidoConsulta consulta={usuariosBase} vacio={`${base} no tiene usuarios propios.`}>
+              {(datos) => <Tabla columnas={COLUMNAS_USUARIOS_BASE} filas={datos} clave={(u) => u.nombre} />}
+            </ContenidoConsulta>
+          )}
+        </section>
+
+        {base && (
+          <div className="rejilla">
+            <section className="bloque">
+              <h2 className="etiqueta">Roles de {base}</h2>
+              <ContenidoConsulta consulta={rolesBase} vacio="La base no tiene roles propios ni miembros en roles fijos.">
+                {(datos) => <ListaRoles roles={datos} />}
+              </ContenidoConsulta>
+            </section>
+
+            <section className="bloque">
+              <h2 className="etiqueta">Privilegios en {base}</h2>
+              <p className="tenue" style={{ margin: 0, fontSize: 13 }}>
+                Un privilegio asignado a un rol lo reciben todos sus miembros.
+              </p>
+              <ContenidoConsulta consulta={privilegiosBase} vacio="No hay permisos asignados a usuarios ni roles de esta base.">
+                {(datos) => (
+                  <Tabla
+                    columnas={COLUMNAS_PRIVILEGIOS_BASE}
+                    filas={datos}
+                    clave={(p) => `${p.principal}-${p.permiso}-${p.estado}-${p.tipoRecurso}-${p.recurso}`}
+                  />
+                )}
+              </ContenidoConsulta>
+            </section>
+          </div>
+        )}
+
+        {base && (
+          <section className="bloque">
+            <h2 className="etiqueta">Objetos con dependencias rotas en {base}</h2>
             <ContenidoConsulta consulta={objetos} vacio="No hay objetos inválidos: todas las dependencias se resuelven.">
               {(datos) => (
                 <Tabla
@@ -214,8 +280,8 @@ export default function AuditoriaPage() {
                 />
               )}
             </ContenidoConsulta>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </>
   )

@@ -4,6 +4,7 @@ import cr.ac.una.dbamonitor.common.CargadorConsultasSql;
 import cr.ac.una.dbamonitor.common.SqlIdentificadores;
 import cr.ac.una.dbamonitor.mantenimiento.dto.EstadisticaTablaDto;
 import cr.ac.una.dbamonitor.mantenimiento.dto.ObjetoCandidatoDto;
+import cr.ac.una.dbamonitor.mantenimiento.dto.ObjetoConErrorDto;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -30,6 +31,7 @@ public class MantenimientoRepository {
     private final String consultaObjetosInvalidos;
     private final String plantillaRecalcularEstadisticas;
     private final String plantillaRecompilarObjeto;
+    private final String plantillaValidarObjetos;
 
     public MantenimientoRepository(JdbcTemplate jdbcTemplate, CargadorConsultasSql cargadorConsultas) {
         this.jdbcTemplate = jdbcTemplate;
@@ -37,6 +39,7 @@ public class MantenimientoRepository {
         this.consultaObjetosInvalidos = cargadorConsultas.cargar(CARPETA + "02_objetos_invalidos.sql");
         this.plantillaRecalcularEstadisticas = cargadorConsultas.cargar(CARPETA + "03_recalcular_estadisticas.sql");
         this.plantillaRecompilarObjeto = cargadorConsultas.cargar(CARPETA + "04_recompilar_objeto.sql");
+        this.plantillaValidarObjetos = cargadorConsultas.cargar(CARPETA + "05_validar_objetos.sql");
     }
 
     /** @param baseDatos nombre de base de datos ya validado (sin corchetes) */
@@ -83,5 +86,16 @@ public class MantenimientoRepository {
                 .replace("{BASE}", SqlIdentificadores.entreCorchetes(baseDatos))
                 .replace("{OBJETO}", nombreObjeto);
         jdbcTemplate.execute(comando);
+    }
+
+    /** @param baseDatos nombre de base de datos ya validado (sin corchetes) */
+    public List<ObjetoConErrorDto> validarObjetos(String baseDatos) {
+        String comando = plantillaValidarObjetos.replace("{BASE}", SqlIdentificadores.entreCorchetes(baseDatos));
+        return jdbcTemplate.query(comando, (fila, numeroFila) ->
+                new ObjetoConErrorDto(
+                        fila.getString("esquema"),
+                        fila.getString("objeto"),
+                        fila.getString("tipo"),
+                        fila.getString("error")));
     }
 }

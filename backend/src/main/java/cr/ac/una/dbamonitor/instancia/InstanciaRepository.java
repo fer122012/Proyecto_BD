@@ -70,6 +70,7 @@ public class InstanciaRepository {
                         fila.getString("modelo_recuperacion"),
                         fila.getInt("nivel_compatibilidad"),
                         fila.getTimestamp("fecha_creacion").toLocalDateTime(),
-                        fila.getBoolean("es_sistema")));
+                        fila.getBoolean("es_sistema"),
+                        fila.getBoolean("tiene_acceso")));
     }
 }

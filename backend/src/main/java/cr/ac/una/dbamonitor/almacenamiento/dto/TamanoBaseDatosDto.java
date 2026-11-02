@@ -10,5 +10,6 @@ public record TamanoBaseDatosDto(
         double tamanoDatosMb,
         double tamanoLogMb,
         double tamanoTotalMb,
-        int cantidadArchivos) {
+        int cantidadArchivos,
+        boolean tieneAcceso) {
 }
