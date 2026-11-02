@@ -1,17 +1,21 @@
 # Módulo 5 – Auditoría
 
-Da al DBA visibilidad sobre quién puede conectarse al servidor, qué puede hacer cada quien y si
-hay objetos (vistas, procedimientos, funciones) con referencias rotas que podrían fallar al
+Da al DBA visibilidad sobre quién puede conectarse al servidor, quién puede entrar a cada base,
+qué puede hacer cada quien y si hay objetos (vistas, procedimientos, funciones) con referencias rotas que podrían fallar al
 ejecutarse.
 
-- Consultas: `database/queries/modulo5_auditoria/` (01 a 04)
+- Consultas: `database/queries/modulo5_auditoria/` (01 a 07)
 - Código: paquete `cr.ac.una.dbamonitor.auditoria` (controller, service, repository y `dto/`)
 - Endpoints:
   - `GET /api/auditoria/logins`: logins registrados en el servidor
-  - `GET /api/auditoria/roles`: roles de servidor con sus miembros
+  - `GET /api/auditoria/roles`: roles de servidor con sus miembros, incluidos los que no tienen
   - `GET /api/auditoria/privilegios`: permisos de servidor otorgados/denegados por login
   - `GET /api/auditoria/objetos-invalidos?baseDatos=BASE_MONITOR`: objetos con dependencias sin
     resolver dentro de la base indicada
+  - `GET /api/auditoria/usuarios-base?baseDatos=BASE_MONITOR`: usuarios de la base y su login
+  - `GET /api/auditoria/roles-base?baseDatos=BASE_MONITOR`: roles de la base con sus miembros
+  - `GET /api/auditoria/privilegios-base?baseDatos=BASE_MONITOR`: permisos de usuarios y roles de
+    la base
 
 Igual que el Módulo 1, el backend lee las consultas directamente de los archivos `.sql`
 documentados (Maven los copia al classpath bajo `sql/`), así que el SQL que se ejecuta es
@@ -24,7 +28,10 @@ exactamente el que aparece aquí.
 | Logins (`/logins`) | `sys.server_principals` | Cada fila es un login del servidor (tipo `SQL_LOGIN`, `WINDOWS_LOGIN` o `WINDOWS_GROUP`). `habilitado = false` significa que el login existe pero no puede conectarse (`DISABLE LOGIN`). `esSysadmin` se calcula revisando si el login pertenece al rol fijo `sysadmin`, que da control total sobre la instancia. |
 | Roles (`/roles`) | `sys.server_role_members` | Los roles fijos de servidor (`sysadmin`, `dbcreator`, `securityadmin`, etc.) agrupan permisos predefinidos. La consulta trae una fila por cada par rol-miembro; el service las agrupa para mostrar, por cada rol, la lista completa de sus miembros. |
 | Privilegios (`/privilegios`) | `sys.server_permissions` | Permisos otorgados (`GRANT`) o denegados (`DENY`) **directamente** a un login, sin pasar por un rol. Un login puede no tener privilegios aquí y aun así tener control total, si pertenece al rol `sysadmin` (ver `/roles`). |
-| Objetos inválidos (`/objetos-invalidos`) | `sys.sql_expression_dependencies` | Objetos (vistas, procedimientos, funciones) que referencian una tabla, columna u otro objeto que SQL Server no pudo encontrar. Ver la sección siguiente para la explicación completa. |
+| Usuarios de la base (`/usuarios-base`) | `sys.database_principals`, `sys.server_principals` | Un login da entrada al servidor y un usuario da entrada a una base; se relacionan por `sid`. Si `loginAsociado` es `null`, el usuario existe en la base pero no puede conectarse. |
+| Roles de la base (`/roles-base`) | `sys.database_principals`, `sys.database_role_members` | Roles creados en la base, con o sin miembros, y roles fijos que tienen miembros. `esFijo` distingue los predefinidos de SQL Server. |
+| Privilegios en la base (`/privilegios-base`) | `sys.database_permissions` | Permisos otorgados o denegados a un usuario o a un rol, y sobre qué recurso aplican. Un `DENY` prevalece sobre un `GRANT`. Un permiso asignado a un rol lo reciben todos sus miembros. |
+| Objetos inválidos (`/objetos-invalidos`) | `sys.sql_expression_dependencies` | Objetos (vistas, procedimientos, funciones) que referencian una tabla u otro objeto de la misma base que SQL Server no pudo encontrar. Ver la sección siguiente para la explicación completa. |
 
 ## El equivalente en SQL Server de los "objetos inválidos" de Oracle
 
@@ -49,9 +56,13 @@ Vista  dbo.ReporteVentas
    referencia →  dbo.VentasHistorico (no existe) → referenced_id = NULL  (aparece en la lista)
 ```
 
-Es una aproximación, no una garantía absoluta: cubre el caso más común y más fácil de
-demostrar (una tabla o columna eliminada después de crear el objeto que la usa), que es también
-el que pide la rúbrica del curso ("objetos inválidos o con errores de compilación").
+Las referencias a otra base o a otro servidor se excluyen: en ellas `referenced_id` siempre es
+`NULL`, aunque el objeto exista, y aparecerían como falsos positivos.
+
+Es una aproximación, no una garantía absoluta: detecta tablas u objetos que faltan, pero no
+columnas eliminadas, porque la tabla sigue existiendo y la referencia aparece resuelta. Esas se
+encuentran con la acción "Validar objetos" del Módulo 6 (ver `docs/modulo6-mantenimiento.md`), que
+no se ejecuta aquí porque necesita el permiso `ALTER` y es más costosa que leer el catálogo.
 
 ### Por qué se consulta una base específica y qué permiso necesita
 
@@ -80,10 +91,10 @@ Si el login pertenece al rol `sysadmin` (visible en `/roles`), tiene control tot
 instancia sin que haga falta otorgarle ningún permiso individual.
 
 **¿Qué diferencia hay entre un rol fijo de servidor y un rol de base de datos?**
-Los roles de servidor (los que muestra este módulo) aplican a toda la instancia: a qué puede
+Los roles de servidor aplican a toda la instancia: a qué puede
 entrar y qué puede administrar un login. Los roles de base de datos (`db_owner`,
-`db_ddladmin`, etc., como el que usa el Módulo 6) aplican dentro de una base específica y se
-asignan a un *usuario* de esa base, no directamente al login.
+`db_ddladmin` o los creados por el DBA, como `rol_ventas`) aplican dentro de una base específica y
+se asignan a un *usuario* de esa base, no directamente al login. El módulo muestra ambos.
 
 **¿Por qué SQL Server no detecta los objetos inválidos al crearlos, como Oracle?**
 Por diseño: usa resolución de nombres diferida, para permitir desplegar objetos en un orden que
@@ -93,6 +104,7 @@ La contraparte es que el error solo aparece en tiempo de ejecución, o revisando
 dependencias como hace esta consulta.
 
 **¿Qué permisos necesita la aplicación para este módulo?**
-Solo `VIEW ANY DEFINITION`, ya otorgado en `database/scripts/01_crear_login_monitor.sql`. No se
-necesita `VIEW SERVER STATE` porque este módulo lee catálogos del sistema (metadatos), no
-vistas de administración dinámica (DMVs) de actividad en tiempo real.
+`VIEW ANY DEFINITION` (`database/scripts/01_crear_login_monitor.sql`) para leer los catálogos, un
+usuario dentro de cada base que se revise y `SELECT` sobre `sys.sql_expression_dependencies`
+(`database/scripts/02_permisos_mantenimiento.sql`). No se necesita `VIEW SERVER STATE` porque este
+módulo lee metadatos, no vistas de administración dinámica (DMVs) de actividad en tiempo real.
