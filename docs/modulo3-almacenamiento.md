@@ -9,21 +9,6 @@ archivo, qué objetos consumen más espacio y cómo ha crecido la base en el tie
 - Permisos: `database/scripts/03_permisos_almacenamiento.sql`
 - Pantalla: `frontend/src/modulos/almacenamiento/`
 
-## Cobertura del enunciado
-
-| Funcionalidad del enunciado | Endpoint | Consulta |
-|---|---|---|
-| Espacio utilizado y disponible en filegroups | `GET /api/almacenamiento/filegroups?baseDatos=X` | `02_espacio_filegroups.sql` |
-| Tamaño actual de la base de datos | `GET /api/almacenamiento/bases-de-datos` | `01_tamano_bases_datos.sql` |
-| Tamaño de los archivos de datos | `GET /api/almacenamiento/archivos?baseDatos=X` | `03_archivos_datos.sql` |
-| Objetos con mayor consumo de almacenamiento | `GET /api/almacenamiento/objetos?baseDatos=X` | `04_objetos_mayor_tamano.sql` |
-| Crecimiento de la base de datos | `GET /api/almacenamiento/crecimiento?baseDatos=X` | `05_crecimiento_base_datos.sql` |
-
-El tamaño de las bases se consulta para toda la instancia. Las demás rutas reciben `baseDatos`
-porque los filegroups, archivos y objetos son propios de cada base y la conexión del backend
-apunta a `master`. Igual que en el Módulo 6, el nombre se valida con `SqlIdentificadores` antes de
-insertarlo en la consulta (un nombre con caracteres no permitidos devuelve un 400).
-
 ## Indicadores
 
 | Indicador (campo JSON) | Fuente | Cómo interpretarlo |
@@ -73,36 +58,3 @@ equivocados o `NULL`. Por eso el esquema se obtiene uniendo `{BASE}.sys.schemas`
 el usuario por el script 02 (Módulo 6), esa parte no hace nada. Sin estos permisos, las rutas por
 base responden con un 500 y el mensaje de permisos insuficientes.
 
-## Preguntas probables en la defensa
-
-**¿Qué es un filegroup y en qué se parece a un tablespace?**
-Es un contenedor lógico de archivos de datos. Cada tabla o índice se crea en un filegroup y sus
-páginas se reparten entre los archivos de ese filegroup. Cumple el mismo papel que un tablespace en
-Oracle. Toda base tiene el filegroup `PRIMARY`, y se pueden crear otros para separar datos (por
-ejemplo, históricos en otro disco).
-
-**¿Por qué el log de transacciones no aparece en los filegroups?**
-Porque el log no pertenece a ningún filegroup: guarda registros de transacciones, no páginas de
-tablas. Se muestra en la tabla de archivos con tipo `Log`.
-
-**¿Cuál es la diferencia entre espacio reservado y usado?**
-SQL Server asigna espacio en extensiones de 8 páginas. Reservado es todo lo asignado al objeto;
-usado son las páginas que realmente tienen datos. La diferencia es espacio asignado pero vacío
-dentro del objeto, y se recupera reconstruyendo el índice.
-
-**¿Un filegroup al 95 % es un problema?**
-Depende de si puede crecer. Si algún archivo tiene crecimiento automático y no llegó a su máximo,
-SQL Server lo agranda solo cuando haga falta (estado `ATENCION`: hay que vigilar el disco). Si ningún
-archivo puede crecer, al llenarse las inserciones fallan con el error 1105 (estado `CRITICO`).
-
-**¿Por qué no conviene un crecimiento automático en porcentaje?**
-Porque cada crecimiento es más grande que el anterior y, en bases grandes, puede tardar y bloquear
-la base mientras se reserva el espacio. Se recomienda un crecimiento fijo en MB.
-
-**¿Cómo se mide el crecimiento si SQL Server no guarda historial de tamaño?**
-Con el tamaño que cada respaldo completo registra en `msdb`. Es información real que el motor
-guarda por su cuenta, y no requiere SQL Server Agent.
-
-**¿Qué limitación tiene SQL Server Express en este módulo?**
-Cada base puede tener como máximo 10 GB de datos (el log no cuenta). Si una base de usuario se
-acerca a ese tamaño, ya no puede crecer aunque haya espacio en el disco.
