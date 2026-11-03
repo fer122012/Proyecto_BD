@@ -59,6 +59,12 @@ GO
 ALTER DATABASE BASE_MONITOR SET RECOVERY FULL;
 GO
 
+/* SQL Server Express crea las bases con AUTO_CLOSE activado: cada vez que la última sesión se
+   desconecta, la base se cierra y SQL Server vacía TODA la caché de planes de la instancia, lo que
+   deja vacías las consultas de mayor consumo y tiempo promedio del Módulo 2. */
+ALTER DATABASE BASE_MONITOR SET AUTO_CLOSE OFF;
+GO
+
 USE BASE_MONITOR;
 GO
 
