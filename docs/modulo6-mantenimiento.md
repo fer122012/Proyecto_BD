@@ -150,29 +150,3 @@ lectura), este módulo ejecuta DDL dentro de una base de datos específica y nec
 
 Este script debe ejecutarse una vez por cada base de práctica que el grupo use para la
 demostración del Módulo 6.
-
-## Preguntas probables en la defensa
-
-**¿Por qué este módulo pide la base de datos en cada solicitud y los demás no?**
-Porque la conexión JDBC del backend es fija (a `master`), y los indicadores de los módulos 1, 2
-y 5 son de servidor. Las estadísticas y las dependencias de objetos son propias de cada base,
-así que hace falta indicar con cuál trabajar.
-
-**¿Qué pasa si recompilo un objeto que no tiene ningún error?**
-Nada grave: `sp_recompile` solo descarta el plan en caché. La próxima ejecución del objeto
-tarda un poco más (porque vuelve a compilar), pero no cambia su comportamiento.
-
-**¿`UPDATE STATISTICS` bloquea la tabla?**
-Toma un bloqueo breve para leer los datos y actualizar los metadatos de la estadística; no
-bloquea lecturas ni escrituras normales de forma prolongada, aunque sí consume recursos de E/S y
-CPU mientras se ejecuta, más con `WITH FULLSCAN` que con una muestra.
-
-**¿Por qué no se usa `sp_updatestats` para toda la base de una vez?**
-Porque la rúbrica pide poder actuar sobre un objeto identificable, con confirmación del
-resultado de esa acción puntual. `sp_updatestats` actualiza todas las estadísticas desactualizadas
-de la base en un solo paso y sería una buena mejora adicional, pero no permitiría mostrar la
-confirmación objeto por objeto que pide este módulo.
-
-**¿Cómo se evita la inyección SQL si el nombre de la tabla va dentro del comando?**
-Validando el identificador contra una lista blanca de caracteres antes de usarlo (ver la
-sección de seguridad arriba), no intentando escapar caracteres peligrosos.

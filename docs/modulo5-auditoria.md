@@ -83,28 +83,3 @@ En `BASE_MONITOR` aparecen tres objetos inválidos creados a propósito por
 `ventas.usp_AplicarDescuento` (la tabla `ventas.Descuento` se eliminó después de crearlos) y
 `rrhh.usp_CalcularBonos` (referencia la tabla `rrhh.Bono`, que nunca existió).
 
-## Preguntas probables en la defensa
-
-**¿Por qué el login puede no tener privilegios listados y aun así tener acceso total?**
-Porque los privilegios de `/privilegios` son solo los que se otorgaron directamente al login.
-Si el login pertenece al rol `sysadmin` (visible en `/roles`), tiene control total sobre la
-instancia sin que haga falta otorgarle ningún permiso individual.
-
-**¿Qué diferencia hay entre un rol fijo de servidor y un rol de base de datos?**
-Los roles de servidor aplican a toda la instancia: a qué puede
-entrar y qué puede administrar un login. Los roles de base de datos (`db_owner`,
-`db_ddladmin` o los creados por el DBA, como `rol_ventas`) aplican dentro de una base específica y
-se asignan a un *usuario* de esa base, no directamente al login. El módulo muestra ambos.
-
-**¿Por qué SQL Server no detecta los objetos inválidos al crearlos, como Oracle?**
-Por diseño: usa resolución de nombres diferida, para permitir desplegar objetos en un orden que
-no sea estrictamente dependiente (por ejemplo, crear un procedimiento antes que la tabla que va
-a usar, siempre que la tabla exista para cuando el procedimiento se ejecute por primera vez).
-La contraparte es que el error solo aparece en tiempo de ejecución, o revisando el catálogo de
-dependencias como hace esta consulta.
-
-**¿Qué permisos necesita la aplicación para este módulo?**
-`VIEW ANY DEFINITION` (`database/scripts/01_crear_login_monitor.sql`) para leer los catálogos, un
-usuario dentro de cada base que se revise y `SELECT` sobre `sys.sql_expression_dependencies`
-(`database/scripts/02_permisos_mantenimiento.sql`). No se necesita `VIEW SERVER STATE` porque este
-módulo lee metadatos, no vistas de administración dinámica (DMVs) de actividad en tiempo real.

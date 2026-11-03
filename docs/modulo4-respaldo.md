@@ -10,19 +10,6 @@ cada base y los respaldos o restauraciones que se están ejecutando en este mome
 - Permisos: `database/scripts/04_permisos_respaldo.sql`
 - Pantalla: `frontend/src/modulos/respaldo/`
 
-## Cobertura del enunciado
-
-| Funcionalidad | Endpoint | Consulta |
-|---|---|---|
-| Último respaldo de cada tipo por base, modelo de recuperación y nivel de riesgo | `GET /api/respaldos` | `01_estado_respaldos_por_base.sql` |
-| Historial de respaldos de una base (tipo, fechas, duración, tamaño, estado, destino) | `GET /api/respaldos/historial?baseDatos=X` | `02_historial_respaldos.sql` |
-| Respaldos y restauraciones en ejecución, con su avance | `GET /api/respaldos/en-curso` | `03_respaldos_en_curso.sql` |
-
-Todo el historial de respaldos de la instancia está en `msdb`, así que la conexión del backend a
-`master` alcanza. En el historial, el nombre de la base es un **valor** del `WHERE` y se pasa como
-parámetro (`?`), no se inserta en el texto de la consulta. Igual que en los demás módulos, antes se
-valida con `SqlIdentificadores` (un nombre con caracteres no permitidos devuelve un 400).
-
 ## Indicadores
 
 | Indicador (campo JSON) | Fuente | Cómo interpretarlo |
@@ -67,38 +54,3 @@ una base sin respaldos recientes se detecta por la fecha del último exitoso.
 también a los trabajos, alertas y operadores. Para tener datos que mostrar, ejecutar
 `05_generar_historial_respaldos.sql`, que hace respaldos completos, diferenciales y de log reales
 de `BASE_MONITOR`.
-
-## Preguntas probables en la defensa
-
-**¿Qué diferencia hay entre un respaldo completo, uno diferencial y uno de log?**
-El completo copia toda la base y es el punto de partida de cualquier restauración. El diferencial
-copia solo las extensiones que cambiaron desde el último completo, así que es más pequeño y rápido.
-El de log copia los registros de transacciones desde el último respaldo de log; solo existe en los
-modelos `FULL` y `BULK_LOGGED`.
-
-**¿Cómo se restauraría `BASE_MONITOR` a las 10:30?**
-Restaurar el último completo anterior a esa hora `WITH NORECOVERY`, luego el último diferencial
-posterior a ese completo (si hay) y después, en orden, cada respaldo de log, el último con
-`STOPAT = '... 10:30'` y `WITH RECOVERY`.
-
-**¿Por qué una base en modelo FULL sin respaldos de log es un riesgo?**
-Porque en ese modelo el log solo se libera al respaldarlo: crece hasta llenar el disco. Además, sin
-respaldos de log no se aprovecha la ventaja del modelo, que es restaurar a un punto en el tiempo.
-
-**¿Por qué las bases del sistema salen como críticas?**
-Porque nunca se respaldaron. `master` guarda los logins y la configuración de la instancia, y `msdb`
-el historial de respaldos y los trabajos; perderlas obliga a reconstruir todo eso a mano. `tempdb`
-se excluye porque se recrea en cada inicio y no se puede respaldar.
-
-**¿Qué es un respaldo COPY_ONLY?**
-Un respaldo fuera de la cadena: no sirve de base a los diferenciales ni corta el log. Se usa para
-sacar una copia puntual sin alterar la estrategia de respaldos. Por eso no cuenta como "último".
-
-**¿Qué aporta `WITH CHECKSUM`?**
-SQL Server verifica el checksum de cada página al leerla y guarda uno del respaldo completo. Si una
-página está dañada, el respaldo falla en lugar de copiar datos corruptos, y al restaurar o con
-`RESTORE VERIFYONLY` se detecta si el archivo de respaldo se dañó.
-
-**¿Por qué no se programan los respaldos desde la herramienta?**
-SQL Server Express no tiene SQL Server Agent. En producción se programarían con trabajos del Agent o
-con el Programador de tareas de Windows ejecutando `sqlcmd` con un script como el 05.

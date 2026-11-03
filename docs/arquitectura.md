@@ -300,13 +300,3 @@ de los módulos 2 a 6, sin necesitar una base de datos:
 `DbamonitorApplicationTests` comprueba además que la aplicación inicia, y para eso necesita
 `application-local.properties`. Las consultas SQL no tienen pruebas automáticas; se verifican contra una
 instancia real.
-
-## 10. Posibles mejoras
-
-- Permitir que el usuario cambie de instancia desde la pantalla, sin reiniciar el backend.
-- Leer el log de errores de SQL Server para mostrar los respaldos fallidos.
-- Admitir cualquier nombre de base, escapando los identificadores como lo hace `QUOTENAME`.
-- Guardar periódicamente el tamaño de las bases para tener un historial independiente de los respaldos.
-- Exportar reportes y agregar un panel con el estado de salud de todos los módulos.
-- Agregar autenticación a la API y certificados válidos para usarla fuera de un entorno local.
-- Agregar pruebas de integración de las consultas SQL.
