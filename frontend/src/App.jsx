@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
-import ModuloPendiente from './components/ModuloPendiente.jsx'
 import InstanciaPage from './modulos/instancia/InstanciaPage.jsx'
 import RendimientoPage from './modulos/rendimiento/RendimientoPage.jsx'
 import AlmacenamientoPage from './modulos/almacenamiento/AlmacenamientoPage.jsx'

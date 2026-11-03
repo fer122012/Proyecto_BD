@@ -12,7 +12,7 @@ import java.util.Map;
 public class SaludRepository {
 
     private static final String CONSULTA_DATOS_SERVIDOR = """
-            SELECT @@SERVERNAME                                            AS servidor,
+            SELECT CAST(SERVERPROPERTY('ServerName') AS NVARCHAR(256))     AS servidor,
                    CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128))        AS edicion,
                    CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128)) AS version
             """;

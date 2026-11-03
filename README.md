@@ -71,4 +71,6 @@ Abrir **http://localhost:5173**.
 - [Instalación detallada y solución de problemas](docs/instalacion.md)
 - [Manual de usuario](docs/manual-usuario.md)
 - [Arquitectura y decisiones de diseño](docs/arquitectura.md)
+- [Evidencias de pruebas](docs/evidencias-pruebas.md)
+- [Bitácora del proyecto](docs/bitacora.md)
 - Documentación de cada módulo en [`docs/`](docs/)

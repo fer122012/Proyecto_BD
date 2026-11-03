@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { salud } from '../api/endpoints.js'
 import useConsulta from '../hooks/useConsulta.js'
 
-/** Módulos del enunciado. Los que aún no tienen backend se marcan como pendientes. */
+/** Módulos del enunciado, en el orden de la barra de navegación. */
 const MODULOS = [
   { ruta: '/instancia', nombre: 'Instancia' },
   { ruta: '/rendimiento', nombre: 'Rendimiento' },
@@ -33,7 +33,6 @@ export default function Layout() {
           {MODULOS.map((modulo) => (
             <NavLink key={modulo.ruta} to={modulo.ruta} className={({ isActive }) => (isActive ? 'activo' : undefined)}>
               {modulo.nombre}
-              {modulo.pendiente && <span className="pendiente">pronto</span>}
             </NavLink>
           ))}
         </nav>
