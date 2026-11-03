@@ -11,19 +11,6 @@ consumen más CPU o memoria en este momento.
 - Generar datos: `database/scripts/06_generar_carga_rendimiento.sql` y
   `database/scripts/prueba_sesiones_bloqueadas.sql`
 
-## Cobertura del enunciado
-
-| Funcionalidad del enunciado | Endpoint | Consulta |
-|---|---|---|
-| Consultas SQL con mayor consumo de recursos | `GET /api/rendimiento/consultas-consumo` | `01_top_consultas_consumo.sql` |
-| Tiempo promedio de ejecución de consultas | `GET /api/rendimiento/tiempo-promedio` | `02_tiempo_promedio_consultas.sql` |
-| Sesiones activas | `GET /api/rendimiento/sesiones` | `03_sesiones_activas.sql` |
-| Sesiones bloqueadas (si existen) | `GET /api/rendimiento/bloqueos` | `04_sesiones_bloqueadas.sql` |
-| Procesos que consumen mayor cantidad de CPU o memoria | `GET /api/rendimiento/procesos?orden=cpu` o `orden=memoria` | `05_procesos_cpu_memoria.sql` |
-
-Todo se consulta para la instancia completa: las DMVs de rendimiento no dependen de una base, así
-que ninguna ruta recibe `baseDatos`. Un `orden` distinto de `cpu` o `memoria` devuelve un 400.
-
 ## Indicadores
 
 | Indicador (campo JSON) | Fuente | Cómo interpretarlo |
@@ -101,33 +88,3 @@ La más lenta en promedio es el reporte de ventas por provincia (une 200 000 det
 la búsqueda de clientes con `LIKE '%…'` y el filtro `YEAR(FechaFactura) = @anio` muestran
 recorridos completos porque no pueden usar un índice.
 
-## Preguntas probables en la defensa
-
-**¿De dónde salen los datos de consumo de las consultas?**
-De `sys.dm_exec_query_stats`, que guarda estadísticas por cada sentencia que tiene un plan en la
-caché. No es un historial: si la instancia se reinicia o la caché se vacía, se pierden.
-
-**¿Por qué una sentencia que tarda 10 ms puede ser la que más CPU consume?**
-Porque el total es tiempo × ejecuciones. Una sentencia de 10 ms ejecutada 500 veces consume más
-que una de 300 ms ejecutada 9 veces. Para optimizar, conviene empezar por las de mayor total.
-
-**¿Qué diferencia hay entre duración y CPU?**
-La duración es el tiempo real; el CPU es el tiempo que el procesador trabajó en la sentencia. Si la
-duración es mucho mayor, la sentencia estuvo esperando: bloqueos, lecturas de disco o red.
-
-**¿Qué es un bloqueo y cuándo es un problema?**
-Una sesión que modifica datos los bloquea hasta confirmar o revertir su transacción; otra que
-quiera leerlos o modificarlos espera (`LCK_M_S`, `LCK_M_X`, …). Es normal que dure milisegundos.
-Es un problema cuando dura mucho, casi siempre porque una transacción quedó abierta.
-
-**¿Qué se hace con un bloqueo crítico?**
-Identificar la sesión raíz, ver qué está haciendo y, si es una transacción olvidada, terminarla con
-`KILL <id>`. SQL Server revierte su transacción y las sesiones bloqueadas continúan.
-
-**¿Un bloqueo es lo mismo que un deadlock?**
-No. En un bloqueo una sesión espera a otra y se resuelve cuando la primera termina. En un deadlock
-dos sesiones se esperan mutuamente; SQL Server lo detecta solo y cancela una de ellas (error 1205).
-
-**¿Por qué los procesos del sistema aparecen como "Sistema"?**
-Son tareas internas de SQL Server (escritura del log, checkpoint, monitor de bloqueos…). Se
-muestran porque también pueden consumir recursos, pero solo si consumen o están trabajando.
