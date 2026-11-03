@@ -3,7 +3,8 @@
   Consulta: Sesiones bloqueadas (si existen)
 
   Fuente: sys.dm_exec_requests (+ sys.dm_exec_sessions y sys.dm_exec_sql_text)
-  Una solicitud está bloqueada cuando blocking_session_id <> 0.
+  Una solicitud está bloqueada por otra sesión cuando blocking_session_id > 0. Los valores negativos
+  (-2, -3, -4, -5) indican que SQL Server no puede identificar a una sesión dueña, así que no se listan.
   Se muestra la sesión bloqueada, quién la bloquea y la sentencia de cada una.
   Si no hay bloqueos, la consulta no devuelve filas.
 
@@ -34,5 +35,5 @@ OUTER APPLY sys.dm_exec_sql_text(r.sql_handle) AS txt_bloqueado
 -- La sesión bloqueadora puede estar inactiva (transacción abierta sin solicitud en curso),
 -- por eso su última sentencia se toma de la conexión y no de dm_exec_requests.
 OUTER APPLY sys.dm_exec_sql_text(ck.most_recent_sql_handle) AS txt_bloqueador
-WHERE r.blocking_session_id <> 0
+WHERE r.blocking_session_id > 0
 ORDER BY r.wait_time DESC;
